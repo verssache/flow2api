@@ -499,7 +499,15 @@
     "放大视频": "放大视频",
     "图片结果已返回": "图片结果已返回",
     "视频结果已返回": "视频结果已返回",
-    "操作类型:": "操作类型:"
+    "操作类型:": "操作类型:",
+    "请选择要清空的日志范围": "请选择要清空的日志范围",
+    "清空失败日志": "清空失败日志",
+    "清空全部日志": "清空全部日志",
+    "确定要清空所有失败日志吗？此操作不可恢复！": "确定要清空所有失败日志吗？此操作不可恢复！",
+    "已清空 {count} 条失败日志": "已清空 {count} 条失败日志",
+    "确定要删除这条日志吗？": "确定要删除这条日志吗？",
+    "日志已删除": "日志已删除",
+    "删除失败: {error}": "删除失败: {error}"
   },
   "en": {
     "管理控制台 - Flow2API": "Admin Console - Flow2API",
@@ -1001,6 +1009,14 @@
     "放大视频": "Upscale video",
     "图片结果已返回": "Image result returned",
     "视频结果已返回": "Video result returned",
-    "操作类型:": "Operation:"
+    "操作类型:": "Operation:",
+    "请选择要清空的日志范围": "Choose which logs to clear",
+    "清空失败日志": "Clear failed logs",
+    "清空全部日志": "Clear all logs",
+    "确定要清空所有失败日志吗？此操作不可恢复！": "Clear all failed logs? This action cannot be undone.",
+    "已清空 {count} 条失败日志": "Cleared {count} failed log(s)",
+    "确定要删除这条日志吗？": "Delete this log? This action cannot be undone.",
+    "日志已删除": "Log deleted",
+    "删除失败: {error}": "Failed to delete: {error}"
   }
 }

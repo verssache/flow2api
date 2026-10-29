@@ -2032,6 +2032,24 @@ class Database:
             await db.execute("DELETE FROM request_logs")
             await db.commit()
 
+    async def delete_log(self, log_id: int) -> bool:
+        """Delete a single request log. Returns True if a row was removed."""
+        async with self._connect(write=True) as db:
+            cursor = await db.execute("DELETE FROM request_logs WHERE id = ?", (log_id,))
+            await db.commit()
+            return cursor.rowcount > 0
+
+    async def clear_failed_logs(self) -> int:
+        """Delete failed request logs (status_code >= 400 or status_text = 'failed')."""
+        async with self._connect(write=True) as db:
+            has_status_text = await self._column_exists(db, "request_logs", "status_text")
+            condition = "CAST(status_code AS INTEGER) >= 400"
+            if has_status_text:
+                condition += " OR status_text = 'failed'"
+            cursor = await db.execute(f"DELETE FROM request_logs WHERE {condition}")
+            await db.commit()
+            return cursor.rowcount
+
     async def init_config_from_toml(
         self, config_dict: dict, is_first_startup: bool = True
     ):

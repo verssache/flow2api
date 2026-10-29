@@ -1793,13 +1793,31 @@ async def get_log_detail(log_id: int, token: str = Depends(verify_admin_token)):
 
 
 @router.delete("/api/logs")
-async def clear_logs(token: str = Depends(verify_admin_token)):
-    """Clear all logs"""
+async def clear_logs(scope: str = "all", token: str = Depends(verify_admin_token)):
+    """Clear logs. scope=all clears everything, scope=failed clears only failed logs"""
+    scope = (scope or "all").strip().lower()
+    if scope not in ("all", "failed"):
+        raise HTTPException(status_code=400, detail="scope must be 'all' or 'failed'")
     try:
+        if scope == "failed":
+            deleted = await db.clear_failed_logs()
+            return {"success": True, "message": "失败日志已清空", "deleted": deleted}
         await db.clear_all_logs()
         return {"success": True, "message": "所有日志已清空"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/api/logs/{log_id}")
+async def delete_log(log_id: int, token: str = Depends(verify_admin_token)):
+    """Delete a single request log"""
+    try:
+        deleted = await db.delete_log(log_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    if not deleted:
+        raise HTTPException(status_code=404, detail="日志不存在")
+    return {"success": True, "message": "日志已删除"}
 
 
 @router.get("/api/admin/config")

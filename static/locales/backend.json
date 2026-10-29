@@ -200,7 +200,9 @@
     "分数测试失败: {error}": "分数测试失败: {error}",
     "Google Cookie 验证失败：{error}": "Google Cookie 验证失败：{error}",
     "Failed to update token: {error}": "更新 Token 失败: {error}",
-    "Failed to add token: {error}": "添加 Token 失败: {error}"
+    "Failed to add token: {error}": "添加 Token 失败: {error}",
+    "失败日志已清空": "失败日志已清空",
+    "日志已删除": "日志已删除"
   },
   "en": {
     "旧版本的邮箱不匹配报错直接丢弃，不再回显给前端。": "Discard legacy email-mismatch errors instead of returning them to the frontend.",
@@ -403,6 +405,8 @@
     "分数测试失败: {error}": "Score test failed: {error}",
     "Google Cookie 验证失败：{error}": "Google Cookie validation failed: {error}",
     "Failed to update token: {error}": "Failed to update token: {error}",
-    "Failed to add token: {error}": "Failed to add token: {error}"
+    "Failed to add token: {error}": "Failed to add token: {error}",
+    "失败日志已清空": "Failed logs have been cleared",
+    "日志已删除": "Log deleted"
   }
 }
