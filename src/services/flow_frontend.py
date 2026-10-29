@@ -839,7 +839,7 @@ class FlowFrontendMixin:
 
     @staticmethod
     def _extract_stream_chat_at_token(bootstrap_text: str) -> str:
-        """从 bootstrap HTML 提取 WIZ_global_data.SNlM0e（XSRF at token）。"""
+        """Extract WIZ_global_data.SNlM0e (XSRF at token) from the bootstrap HTML."""
         for pattern in (
             r'"SNlM0e"\s*:\s*"((?:\\.|[^"\\])+)"',
             r"SNlM0e['\"]?\s*[:=]\s*['\"]([A-Za-z0-9_:\-.]+)['\"]",
@@ -860,7 +860,7 @@ class FlowFrontendMixin:
         recaptcha_token: str,
         session_id: str,
     ) -> str:
-        """构造 StreamChat f.req（结构复刻自新版前端真实请求）。
+        """Build the StreamChat f.req (structure mirrors the real request from the new frontend).
 
         outer = [null, "<inner json>"]
         inner = [session_id, [[[[prompt]]]],
@@ -877,11 +877,11 @@ class FlowFrontendMixin:
 
     @classmethod
     def _extract_stream_chat_media_ids(cls, payloads: Any) -> List[str]:
-        """从 StreamChat 响应帧中提取 generate_image 结果的 media_id。
+        """Extract the media_id of the generate_image result from StreamChat response frames.
 
-        batchexecute 帧形如 ["wrb.fr", null, "<inner json>"]，业务数据在
-        内层 JSON 字符串里，需要先 json.loads 再递归查找
-        ["media_id", [null, null, "<uuid>"]] 模式。
+        A batchexecute frame looks like ["wrb.fr", null, "<inner json>"] and the business
+        data lives in the inner JSON string, so json.loads it first and then
+        recursively search for the ["media_id", [null, null, "<uuid>"]] pattern.
         """
         found: List[str] = []
 
@@ -929,7 +929,7 @@ class FlowFrontendMixin:
         timeout: int,
         cookie_storage: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """新版 Flow 图片生成入口：FlowCreationAgentService/StreamChat。"""
+        """Image generation entry point for the new Flow: FlowCreationAgentService/StreamChat."""
         page_url = f"https://flow.google.com/project/{project_id}"
         bootstrap_cookie_header = (
             serialize_cookie_header_for_url(cookie_storage, page_url)

@@ -16,11 +16,11 @@ from ..core.logger import debug_logger
 from .browser_cookie_utils import validate_flow_cookie_storage
 
 def _safe_updated_flow_cookies(owner, original) -> str:
-    """读取 Cookie 最新快照，缺失实现时安全降级。
+    """Read the latest cookie snapshot, degrading safely when the implementation is missing.
 
-    旧版/自定义 flow_frontend 覆盖可能没有 get_updated_flow_cookies，
-    直接调用会抛 AttributeError（历史报错：
-    'FlowClient' object has no attribute 'get_updated_flow_cookies'）。
+    Older/custom flow_frontend overrides may not have get_updated_flow_cookies;
+    calling it directly raises AttributeError (historical error:
+    'FlowClient' object has no attribute 'get_updated_flow_cookies').
     """
     getter = getattr(owner, "get_updated_flow_cookies", None)
     if getter is None:
@@ -594,7 +594,7 @@ class CurrentFlowClientMixin:
                 )
             except Exception as error:
                 last_error = error
-                # MODEL_ACCESS_DENIED 为账号权限拒绝，重试不会改变结果
+                # MODEL_ACCESS_DENIED means the account lacks permission; retrying will not change the result
                 if "MODEL_ACCESS_DENIED" in str(error):
                     raise
                 error_text = str(error).lower()

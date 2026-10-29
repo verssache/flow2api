@@ -38,10 +38,10 @@ except ImportError:
 
 
 def _safe_updated_flow_cookies(owner, original) -> str:
-    """读取 Cookie 最新快照，缺失实现时安全降级。
+    """Read the latest Cookie snapshot, degrading gracefully when the implementation is missing.
 
-    历史报错：'FlowClient' object has no attribute 'get_updated_flow_cookies'
-    成因是自定义 flow_frontend 覆盖了上游新增的 Cookie 作用域方法。
+    Historical error: 'FlowClient' object has no attribute 'get_updated_flow_cookies'
+    Cause: a custom flow_frontend overrides the Cookie scope method added upstream.
     """
     getter = getattr(owner, "get_updated_flow_cookies", None)
     if getter is None:
@@ -53,7 +53,7 @@ def _safe_updated_flow_cookies(owner, original) -> str:
 
 
 class _FlowClientBase(FlowFrontendMixin):
-    """VideoFX API客户端"""
+    """VideoFX API client"""
 
     FLOW_PUBLIC_API_KEY = "AIzaSyBtrm0o5ab1c-Ec8ZuLcGt3oJAA5VWt3pY"
     FLOW_BROWSER_CHANNEL_HEADER = "stable"
@@ -74,52 +74,52 @@ class _FlowClientBase(FlowFrontendMixin):
         self.labs_base_url = config.flow_labs_base_url
         self.api_base_url = config.flow_api_base_url
         self.timeout = config.flow_timeout
-        # 缓存每个账号的 User-Agent
+        # Cache the User-Agent per account
         self._user_agent_cache = {}
-        # 当前请求链路绑定的浏览器指纹（基于 contextvar，避免并发串扰）
+        # Browser fingerprint bound to the current request chain (contextvar-based to avoid cross-request bleed)
         self._request_fingerprint_ctx: contextvars.ContextVar[
             Optional[Dict[str, Any]]
         ] = contextvars.ContextVar("flow_request_fingerprint", default=None)
         self._remote_browser_prefill_last_sent: Dict[str, float] = {}
 
-        # 仅保留当前上游仍稳定出现的最小浏览器风格头；具体 UA / Accept-Language / UA-CH
-        # 统一以当前请求链路绑定的 runtime fingerprint 为准，不再兼容旧版随机平台策略。
+        # Keep only the minimal browser-style headers still stably emitted upstream; the specific UA / Accept-Language / UA-CH
+        # always follow the runtime fingerprint bound to the current request chain; the legacy randomized platform policy is no longer supported.
         self._default_client_headers = {
             "sec-ch-ua-mobile": "?0",
             "sec-fetch-dest": "empty",
             "sec-fetch-mode": "cors",
             "sec-fetch-site": "cross-site",
         }
-        # 发车策略改为“请求到就发”：
-        # 不在 flow2api 本地对提交做批次整形或排队，避免把同批请求打成阶梯。
+        # Dispatch policy changed to "send on arrival":
+        # no local batch shaping or queueing of submissions in flow2api, so requests from the same batch are not staggered.
 
     def _generate_user_agent(self, account_id: str = None) -> str:
-        """基于账号ID生成固定的 User-Agent
-        
+        """Generate a stable User-Agent from the account ID
+
         Args:
-            account_id: 账号标识（如 email 或 token_id），相同账号返回相同 UA
-            
+            account_id: Account identifier (e.g. email or token_id); the same account returns the same UA
+
         Returns:
-            User-Agent 字符串
+            User-Agent string
         """
         if not hasattr(self, "_user_agent_cache"):
             self._user_agent_cache = {}
 
-        # 如果没有提供账号ID，生成随机UA
+        # If no account ID is provided, generate a random UA
         if not account_id:
             account_id = f"random_{random.randint(1, 999999)}"
         
-        # 如果已缓存，直接返回
+        # Return directly if already cached
         if account_id in self._user_agent_cache:
             return self._user_agent_cache[account_id]
         
-        # 使用账号ID作为随机种子，确保同一账号生成相同的UA
+        # Use the account ID as the random seed so the same account yields the same UA
         import hashlib
 
         seed = int(hashlib.md5(account_id.encode()).hexdigest()[:8], 16)
         rng = random.Random(seed)
         
-        # fallback 仅在没有 runtime fingerprint 时兜底，直接与当前上游 Windows Chrome 风格对齐
+        # Fallback only applies when there is no runtime fingerprint; align directly with the current upstream Windows Chrome style
         chrome_versions = ["136.0.0.0"]
         ch_version = rng.choice(chrome_versions)
         user_agent = (
@@ -127,13 +127,13 @@ class _FlowClientBase(FlowFrontendMixin):
             f"(KHTML, like Gecko) Chrome/{ch_version} Safari/537.36"
         )
         
-        # 缓存结果
+        # Cache the result
         self._user_agent_cache[account_id] = user_agent
         
         return user_agent
 
     def _set_request_fingerprint(self, fingerprint: Optional[Dict[str, Any]]):
-        """设置当前请求链路的浏览器指纹上下文。"""
+        """Set the browser fingerprint context for the current request chain."""
         if not hasattr(self, "_request_fingerprint_ctx"):
             self._request_fingerprint_ctx = contextvars.ContextVar(
                 "flow_request_fingerprint",
@@ -142,7 +142,7 @@ class _FlowClientBase(FlowFrontendMixin):
         self._request_fingerprint_ctx.set(dict(fingerprint) if fingerprint else None)
 
     def get_request_fingerprint(self) -> Optional[Dict[str, Any]]:
-        """获取当前请求链路绑定的浏览器指纹快照。"""
+        """Get a snapshot of the browser fingerprint bound to the current request chain."""
         if not hasattr(self, "_request_fingerprint_ctx"):
             return None
         fingerprint = self._request_fingerprint_ctx.get()
@@ -151,7 +151,7 @@ class _FlowClientBase(FlowFrontendMixin):
         return dict(fingerprint)
 
     def clear_request_fingerprint(self):
-        """清理请求链路绑定的浏览器指纹。"""
+        """Clear the browser fingerprint bound to the request chain."""
         self._set_request_fingerprint(None)
 
     def _set_captcha_request_context(self, context: Optional[Dict[str, Any]]):
@@ -446,7 +446,7 @@ class _FlowClientBase(FlowFrontendMixin):
         apply_default_client_headers: bool = True,
         impersonate: str = "chrome",
     ) -> Dict[str, Any]:
-        """统一HTTP请求处理"""
+        """Unified HTTP request handling"""
         fingerprint = self._request_fingerprint_ctx.get()
 
         proxy_url = None
@@ -703,7 +703,7 @@ class _FlowClientBase(FlowFrontendMixin):
         impersonate: str = "chrome",
         cookie_jar: Optional[CookieJar] = None,
     ) -> str:
-        """执行原始文本请求（如 SSE），返回响应文本。"""
+        """Execute a raw text request (e.g. SSE) and return the response text."""
         fingerprint = self._request_fingerprint_ctx.get()
 
         proxy_url = None
@@ -887,7 +887,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     response = await session.post(url, **request_kwargs)
 
                 if cookie_jar is not None:
-                    # 兼容自定义/旧版 flow_frontend：缺少该方法时跳过快照回写
+                    # Compatible with custom/legacy flow_frontend: skip snapshot write-back when the method is missing
                     updater = getattr(self, "_update_flow_cookie_jar", None)
                     if updater is not None:
                         updater(cookie_jar, response)
@@ -951,7 +951,7 @@ class _FlowClientBase(FlowFrontendMixin):
             raise Exception(f"Flow API text request failed: {error_msg}")
 
     def _should_fallback_to_urllib(self, error_message: str) -> bool:
-        """判断是否应从 curl_cffi 回退到 urllib。"""
+        """Decide whether to fall back from curl_cffi to urllib."""
         error_lower = (error_message or "").lower()
         return any(
             keyword in error_lower
@@ -980,7 +980,7 @@ class _FlowClientBase(FlowFrontendMixin):
         proxy_url: Optional[str],
         timeout: int,
     ) -> Dict[str, Any]:
-        """使用 urllib 执行 JSON 请求，作为 curl_cffi 的网络回退。"""
+        """Execute a JSON request via urllib as the curl_cffi network fallback."""
         request_headers = dict(headers or {})
         request_headers.setdefault("Accept", "application/json")
         request_headers["Accept-Encoding"] = "identity"
@@ -1045,7 +1045,7 @@ class _FlowClientBase(FlowFrontendMixin):
             raise Exception(f"Invalid JSON response: {body_text[:200]}") from exc
 
     def _is_timeout_error(self, error: Exception) -> bool:
-        """判断是否为网络超时，便于快速失败重试。"""
+        """Detect network timeouts so retries can fail fast."""
         error_lower = str(error).lower()
         return any(
             keyword in error_lower
@@ -1059,7 +1059,7 @@ class _FlowClientBase(FlowFrontendMixin):
         )
 
     def _is_proxy_connection_error(self, error: Exception) -> bool:
-        """识别本地/上游代理不可用导致的连接失败。"""
+        """Detect connection failures caused by an unavailable local/upstream proxy."""
         error_lower = str(error).lower()
         return any(
             keyword in error_lower
@@ -1075,7 +1075,7 @@ class _FlowClientBase(FlowFrontendMixin):
         )
 
     def _is_retryable_network_error(self, error_str: str) -> bool:
-        """识别可重试的 TLS/连接类网络错误。"""
+        """Detect retryable TLS/connection-class network errors."""
         error_lower = (error_str or "").lower()
         return any(
             keyword in error_lower
@@ -1104,21 +1104,21 @@ class _FlowClientBase(FlowFrontendMixin):
         )
 
     def _get_control_plane_timeout(self) -> int:
-        """控制轻量控制面请求的超时，避免认证/项目接口长时间挂起。"""
+        """Cap timeouts for lightweight control-plane requests so auth/project endpoints do not hang for long."""
         return max(5, min(int(self.timeout or 0) or 120, 10))
 
     def _get_video_submit_timeout(self) -> int:
-        """视频提交接口应快速返回 operation，避免单次网络挂死拖满整条链路。"""
+        """The video submission endpoint should return an operation quickly so one hung request does not stall the whole chain."""
         return max(30, min(int(self.timeout or 0) or 120, 75))
 
     def _get_video_poll_timeout(self) -> int:
-        """视频状态查询是轻量轮询，请求超时不应超过下一轮轮询太久。"""
+        """Video status polling is lightweight; the request timeout should not exceed the next poll round by much."""
         return max(10, min(int(self.timeout or 0) or 120, 45))
 
     def _resolve_generation_retry_budget(
         self, base_max_retries: int, error: Optional[Union[Exception, str]] = None
     ) -> int:
-        """计算当前生成链路允许的总重试次数。"""
+        """Compute the total number of retries allowed for the current generation chain."""
         effective_max_retries = max(1, int(base_max_retries or 1))
         if error is None:
             return effective_max_retries
@@ -1136,7 +1136,7 @@ class _FlowClientBase(FlowFrontendMixin):
         return effective_max_retries
 
     def _build_realistic_video_submit_headers(self) -> Dict[str, str]:
-        """构造当前上游真实抓包风格的视频提交头。"""
+        """Build video submission headers matching the real traffic captured from the current upstream."""
         return self._build_current_flow_media_headers(
             content_type="text/plain;charset=UTF-8"
         )
@@ -1146,7 +1146,7 @@ class _FlowClientBase(FlowFrontendMixin):
         return resolved or fallback
 
     def _resolve_impersonate_from_fingerprint(self, fallback: str = "chrome") -> str:
-        """根据当前请求链路绑定的浏览器指纹，选择最接近的 curl_cffi impersonate。"""
+        """Choose the closest curl_cffi impersonate target based on the browser fingerprint bound to the current request chain."""
         fingerprint = self.get_request_fingerprint()
         if not isinstance(fingerprint, dict):
             return fallback
@@ -1184,7 +1184,7 @@ class _FlowClientBase(FlowFrontendMixin):
         token_id: Optional[int] = None,
         action: str = "VIDEO_GENERATION",
     ) -> Dict[str, Any]:
-        """视频 API 加硬截止，避免 curl_cffi 底层偶发卡住导致整条请求悬挂。"""
+        """Hard deadline for the video API so an occasional curl_cffi stall cannot leave the whole request hanging."""
         raw_body = json.dumps(json_data, ensure_ascii=False, separators=(",", ":"))
         headers = self._build_realistic_video_submit_headers()
         headers.update(self._build_labs_request_context_headers(project_id))
@@ -1215,11 +1215,11 @@ class _FlowClientBase(FlowFrontendMixin):
         token_id: Optional[int],
         token_image_concurrency: Optional[int],
     ) -> tuple[bool, int, int]:
-        """图片请求不再做本地发车排队，直接进入取 token 并提交上游。"""
+        """Image requests no longer queue locally; they go straight to token acquisition and upstream submission."""
         return True, 0, 0
 
     async def _release_image_launch_gate(self, token_id: Optional[int]):
-        """保留接口形状，当前无需释放任何本地发车状态。"""
+        """Keep the interface shape; no local dispatch state needs releasing right now."""
         return
 
     async def _acquire_video_launch_gate(
@@ -1227,11 +1227,11 @@ class _FlowClientBase(FlowFrontendMixin):
         token_id: Optional[int],
         token_video_concurrency: Optional[int],
     ) -> tuple[bool, int, int]:
-        """视频请求不再做本地发车排队，直接进入取 token 并提交上游。"""
+        """Video requests no longer queue locally; they go straight to token acquisition and upstream submission."""
         return True, 0, 0
 
     async def _release_video_launch_gate(self, token_id: Optional[int]):
-        """保留接口形状，当前无需释放任何本地发车状态。"""
+        """Keep the interface shape; no local dispatch state needs releasing right now."""
         return
 
     async def _make_image_generation_request(
@@ -1243,13 +1243,13 @@ class _FlowClientBase(FlowFrontendMixin):
         project_id: Optional[str] = None,
         token_id: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """图片生成请求使用更短超时，并在网络超时时快速重试。"""
+        """Image generation requests use a shorter timeout and retry quickly on network timeouts."""
         request_timeout = config.flow_image_request_timeout
         total_attempts = max(1, config.flow_image_timeout_retry_count + 1)
         retry_delay = config.flow_image_timeout_retry_delay
 
-        # 对于浏览器/远程浏览器打码链路，优先保持与打码时一致的出口。
-        # 否则在首跳改走媒体代理时，容易触发 reCAPTCHA 校验失败并放大长尾。
+        # For browser/remote-browser captcha chains, keep the same egress used for captcha solving.
+        # Otherwise switching to the media proxy on the first hop tends to trigger reCAPTCHA failures and inflate tail latency.
         fingerprint = self._request_fingerprint_ctx.get()
         has_fingerprint_context = bool(isinstance(fingerprint, dict) and fingerprint)
 
@@ -1274,7 +1274,7 @@ class _FlowClientBase(FlowFrontendMixin):
 
         for attempt_index in range(total_attempts):
             if has_media_proxy:
-                # 两次重试时采用“主链路 + 备链路”策略，避免每次都先卡在错误链路上。
+                # On the second retry use a "primary + backup" approach so we do not keep hitting the broken path first every time.
                 if attempt_index == 0:
                     prefer_media_proxy = prefer_media_first
                 elif attempt_index == 1:
@@ -1403,10 +1403,10 @@ class _FlowClientBase(FlowFrontendMixin):
             raise last_error
         raise RuntimeError("图片生成请求失败")
 
-    # ========== 认证相关 (使用ST) ==========
+    # ========== Authentication (uses ST) ==========
 
     async def st_to_at(self, st: str) -> dict:
-        """ST转AT
+        """Exchange ST for AT
 
         Args:
             st: Session Token
@@ -1443,7 +1443,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 force_no_proxy=True,
             )
 
-    # ========== 项目管理 (使用ST) ==========
+    # ========== Project management (uses ST) ==========
 
     async def create_project(
         self,
@@ -1451,11 +1451,11 @@ class _FlowClientBase(FlowFrontendMixin):
         title: str,
         google_cookies: Optional[str] = None,
     ) -> str:
-        """创建项目,返回project_id
+        """Create a project, returning project_id
 
         Args:
             st: Session Token
-            title: 项目标题
+            title: Project title
 
         Returns:
             project_id (UUID)
@@ -1534,11 +1534,11 @@ class _FlowClientBase(FlowFrontendMixin):
         raise RuntimeError("创建项目失败")
 
     async def delete_project(self, st: str, project_id: str):
-        """删除项目
+        """Delete a project
 
         Args:
             st: Session Token
-            project_id: 项目ID
+            project_id: Project ID
         """
         url = f"{self.labs_base_url}/trpc/project.deleteProject"
         json_data = {"json": {"projectToDeleteId": project_id}}
@@ -1552,17 +1552,17 @@ class _FlowClientBase(FlowFrontendMixin):
             timeout=self._get_control_plane_timeout(),
         )
 
-    # ========== 媒体获取 (使用AT) ==========
+    # ========== Media retrieval (uses AT) ==========
 
     async def get_media(self, at: str, media_name: str) -> dict:
-        """获取媒体内容 (视频返回base64编码数据)
+        """Fetch media content (videos return base64-encoded data)
 
-        Google 的 batchCheckAsyncVideoGenerationStatus 接口在视频生成成功后
-        不返回下载 URL。需要通过 GET /v1/media/{name} 获取视频内容。
+        Google's batchCheckAsyncVideoGenerationStatus endpoint does not return a
+        download URL after video generation succeeds; fetch content via GET /v1/media/{name}.
 
         Args:
             at: Access Token
-            media_name: 媒体名称 (UUID格式)
+            media_name: Media name (UUID format)
 
         Returns:
             {
@@ -1585,10 +1585,10 @@ class _FlowClientBase(FlowFrontendMixin):
             timeout=max(60, int(self.timeout or 120)),
         )
 
-    # ========== 余额查询 (使用AT) ==========
+    # ========== Balance query (uses AT) ==========
 
     async def get_credits(self, at: str) -> dict:
-        """查询余额
+        """Query the balance
 
         Args:
             at: Access Token
@@ -1609,16 +1609,16 @@ class _FlowClientBase(FlowFrontendMixin):
         )
         return result
 
-    # ========== 图片上传 (使用AT) ==========
+    # ========== Image upload (uses AT) ==========
 
     def _detect_image_mime_type(self, image_bytes: bytes) -> str:
-        """通过文件头 magic bytes 检测图片 MIME 类型
+        """Detect the image MIME type from the file header magic bytes
 
         Args:
-            image_bytes: 图片字节数据
+            image_bytes: Image byte data
 
         Returns:
-            MIME 类型字符串，默认 image/jpeg
+            MIME type string, defaults to image/jpeg
         """
         if len(image_bytes) < 12:
             return "image/jpeg"
@@ -1632,7 +1632,7 @@ class _FlowClientBase(FlowFrontendMixin):
         # JPEG: FF D8 FF
         if image_bytes[:3] == b"\xff\xd8\xff":
             return "image/jpeg"
-        # GIF: GIF87a 或 GIF89a
+        # GIF: GIF87a or GIF89a
         if image_bytes[:6] in (b"GIF87a", b"GIF89a"):
             return "image/gif"
         # BMP: BM
@@ -1645,19 +1645,19 @@ class _FlowClientBase(FlowFrontendMixin):
         return "image/jpeg"
 
     def _convert_to_jpeg(self, image_bytes: bytes) -> bytes:
-        """将图片转换为 JPEG 格式
+        """Convert the image to JPEG format
 
         Args:
-            image_bytes: 原始图片字节数据
+            image_bytes: Raw image byte data
 
         Returns:
-            JPEG 格式的图片字节数据
+            Image byte data in JPEG format
         """
         from io import BytesIO
         from PIL import Image
 
         img = Image.open(BytesIO(image_bytes))
-        # 如果有透明通道，转换为 RGB
+        # Convert to RGB if there is an alpha channel
         if img.mode in ("RGBA", "LA", "P"):
             img = img.convert("RGB")
         
@@ -1672,31 +1672,31 @@ class _FlowClientBase(FlowFrontendMixin):
         aspect_ratio: str = "IMAGE_ASPECT_RATIO_LANDSCAPE",
         project_id: Optional[str] = None,
     ) -> str:
-        """上传图片,返回mediaId
+        """Upload an image, returning mediaId
 
         Args:
             at: Access Token
-            image_bytes: 图片字节数据
-            aspect_ratio: 图片或视频宽高比（会自动转换为图片格式）
-            project_id: 项目ID（新上传接口可使用）
+            image_bytes: Image byte data
+            aspect_ratio: Image or video aspect ratio (converted to the image format automatically)
+            project_id: Project ID (available for the new upload endpoint)
 
         Returns:
             mediaId
         """
-        # 转换视频aspect_ratio为图片aspect_ratio
+        # Convert the video aspect_ratio to an image aspect_ratio
         # VIDEO_ASPECT_RATIO_LANDSCAPE -> IMAGE_ASPECT_RATIO_LANDSCAPE
         # VIDEO_ASPECT_RATIO_PORTRAIT -> IMAGE_ASPECT_RATIO_PORTRAIT
         if aspect_ratio.startswith("VIDEO_"):
             aspect_ratio = aspect_ratio.replace("VIDEO_", "IMAGE_")
 
-        # 自动检测图片 MIME 类型
+        # Auto-detect the image MIME type
         mime_type = self._detect_image_mime_type(image_bytes)
 
-        # 编码为base64 (去掉前缀)
+        # Encode as base64 (strip the prefix)
         image_base64 = base64.b64encode(image_bytes).decode("utf-8")
 
-        # 优先尝试新版上传接口: /v1/flow/uploadImage
-        # 若失败则自动回退到旧接口,保证兼容
+        # Try the new upload endpoint first: /v1/flow/uploadImage
+        # Fall back to the legacy endpoint automatically on failure for compatibility
         ext = "png" if "png" in mime_type else "jpg"
         upload_file_name = f"flow2api_upload_{int(time.time() * 1000)}.{ext}"
         new_url = f"{self.api_base_url}/flow/uploadImage"
@@ -1717,7 +1717,7 @@ class _FlowClientBase(FlowFrontendMixin):
             "mimeType": mime_type,
         }
 
-        # 兼容回退：旧接口 :uploadUserImage
+        # Compatibility fallback: legacy endpoint :uploadUserImage
         legacy_url = f"{self.api_base_url}:uploadUserImage"
         legacy_json_data = {
             "imageInput": {
@@ -1774,7 +1774,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     else self._get_retry_reason(str(new_upload_error))
                 )
 
-                # 旧接口不携带 projectId，带项目上下文的上传一旦回退就可能把图片挂到错误项目。
+                # The legacy endpoint carries no projectId, so a project-scoped upload that falls back may attach the image to the wrong project.
                 if normalized_project_id:
                     if retry_reason and retry_attempt < max_retries - 1:
                         debug_logger.log_warning(
@@ -1826,7 +1826,7 @@ class _FlowClientBase(FlowFrontendMixin):
             raise last_error
         raise RuntimeError("上传图片失败")
 
-    # ========== 图片生成 (使用AT) - 同步返回 ==========
+    # ========== Image generation (uses AT) - synchronous return ==========
 
     async def generate_image(
         self,
@@ -1841,21 +1841,21 @@ class _FlowClientBase(FlowFrontendMixin):
         progress_callback: Optional[Callable[[str, int], Awaitable[None]]] = None,
         google_cookies: Optional[str] = None,
     ) -> tuple[dict, str, Dict[str, Any]]:
-        """生成图片(同步返回)
+        """Generate images (synchronous return)
 
         Args:
             at: Access Token
-            project_id: 项目ID
-            prompt: 提示词
+            project_id: Project ID
+            prompt: Prompt
             model_name: NARWHAL / GEM_PIX / GEM_PIX_2 / IMAGEN_3_5
-            aspect_ratio: 图片宽高比
-            image_inputs: 参考图片列表(图生图时使用)
+            aspect_ratio: Image aspect ratio
+            image_inputs: Reference image list (used for image-to-image)
 
         Returns:
             (result, session_id, perf_trace)
-            result: 上游返回的生成结果
-            session_id: 本次成功图片生成请求使用的 sessionId
-            perf_trace: 生成重试与链路耗时轨迹
+            result: Generation result returned by the upstream
+            session_id: sessionId used by this successful image generation request
+            perf_trace: Retry and chain latency trace for the generation
         """
         url = f"{self.api_base_url}/projects/{project_id}/flowMedia:batchGenerateImages"
         frontend_cookie_storage = ""
@@ -1884,7 +1884,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 "recaptcha_ok": False,
             }
             attempt_started_at = time.time()
-            # 每次重试都重新获取 reCAPTCHA token
+            # Re-acquire the reCAPTCHA token on every retry
             recaptcha_started_at = time.time()
             if progress_callback is not None:
                 await progress_callback("solving_image_captcha", 38)
@@ -1950,7 +1950,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 await progress_callback("submitting_image", 48)
             session_id = self._generate_session_id()
 
-            # 构建请求 - 新版接口在外层和 requests 内都带 clientContext
+            # Build the request - the new endpoint carries clientContext both at the outer level and inside requests
             client_context = {
                 "recaptchaContext": {
                     "token": recaptcha_token,
@@ -1961,7 +1961,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 "tool": "PINHOLE",
             }
 
-            # 新版图片接口使用结构化提示词 + new media 开关
+            # The new image endpoint uses a structured prompt + the new media switch
             request_data = {
                 "clientContext": client_context,
                 "seed": random.randint(1, 999999),
@@ -2043,7 +2043,7 @@ class _FlowClientBase(FlowFrontendMixin):
             finally:
                 await self._notify_browser_captcha_request_finished(browser_id)
         
-        # 所有重试都失败
+        # All retries failed
         perf_trace["final_success_attempt"] = None
         raise last_error
 
@@ -2057,27 +2057,27 @@ class _FlowClientBase(FlowFrontendMixin):
         session_id: Optional[str] = None,
         token_id: Optional[int] = None,
     ) -> str:
-        """放大图片到 2K/4K
+        """Upscale an image to 2K/4K
 
         Args:
             at: Access Token
-            project_id: 项目ID
-            media_id: 图片的 mediaId (从 batchGenerateImages 返回的 media[0]["name"])
-            target_resolution: UPSAMPLE_IMAGE_RESOLUTION_2K 或 UPSAMPLE_IMAGE_RESOLUTION_4K
-            user_paygate_tier: 用户等级 (如 PAYGATE_TIER_NOT_PAID / PAYGATE_TIER_ONE)
-            session_id: 可选，复用图片生成请求的 sessionId
+            project_id: Project ID
+            media_id: mediaId of the image (from media[0]["name"] returned by batchGenerateImages)
+            target_resolution: UPSAMPLE_IMAGE_RESOLUTION_2K or UPSAMPLE_IMAGE_RESOLUTION_4K
+            user_paygate_tier: User tier (e.g. PAYGATE_TIER_NOT_PAID / PAYGATE_TIER_ONE)
+            session_id: Optional; reuse the sessionId of the image generation request
 
         Returns:
-            base64 编码的图片数据
+            base64-encoded image data
         """
         url = f"{self.api_base_url}/flow/upsampleImage"
 
-        # 403/reCAPTCHA/500 重试逻辑 - 使用配置的最大重试次数
+        # 403/reCAPTCHA/500 retry logic - uses the configured max retry count
         max_retries = config.flow_max_retries
         last_error = None
 
         for retry_attempt in range(max_retries):
-            # 获取 reCAPTCHA token - 使用 IMAGE_GENERATION action
+            # Acquire the reCAPTCHA token - using the IMAGE_GENERATION action
             recaptcha_token, browser_id = await self._get_recaptcha_token(
                 project_id, action="IMAGE_GENERATION", token_id=token_id
             )
@@ -2110,7 +2110,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 },
             }
 
-            # 4K/2K 放大使用专用超时，因为返回的 base64 数据量很大
+            # 4K/2K upscaling uses a dedicated timeout because the returned base64 payload is large
             try:
                 result = await self._make_request(
                     method="POST",
@@ -2121,7 +2121,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     timeout=config.upsample_timeout,
                 )
 
-                # 返回 base64 编码的图片
+                # Return the base64-encoded image
                 return result.get("encodedImage", "")
             except Exception as e:
                 last_error = e
@@ -2141,10 +2141,10 @@ class _FlowClientBase(FlowFrontendMixin):
 
         raise last_error
 
-    # ========== 视频生成 (使用AT) - 异步返回 ==========
+    # ========== Video generation (uses AT) - asynchronous return ==========
 
     def _extract_media_name(self, media: Any) -> Optional[str]:
-        """从新版 media 对象或数组中提取 media id。"""
+        """Extract the media id from a new-style media object or array."""
         if isinstance(media, list):
             for item in media:
                 media_name = self._extract_media_name(item)
@@ -2160,7 +2160,7 @@ class _FlowClientBase(FlowFrontendMixin):
     def _build_video_text_input(
         self, prompt: str, use_v2_model_config: bool = False
     ) -> Dict[str, Any]:
-        # 当前 Flow 上游视频链路统一使用 structuredPrompt，不再兼容旧 prompt 字段。
+        # The current Flow upstream video chain uses structuredPrompt exclusively; the legacy prompt field is no longer supported.
         return {"structuredPrompt": {"parts": [{"text": prompt}]}}
 
     def _build_video_media_generation_context(
@@ -2189,7 +2189,7 @@ class _FlowClientBase(FlowFrontendMixin):
         return None
 
     def _truncate_large_debug_value(self, data: Any, max_length: int = 240) -> Any:
-        """截断调试输出中的超长字段，避免污染控制台。"""
+        """Truncate overly long fields in debug output to avoid polluting the console."""
         if isinstance(data, dict):
             return {
                 key: self._truncate_large_debug_value(value, max_length=max_length)
@@ -2482,15 +2482,15 @@ class _FlowClientBase(FlowFrontendMixin):
         token_video_concurrency: Optional[int] = None,
         google_cookies: Optional[str] = None,
     ) -> dict:
-        """文生视频,返回task_id
+        """Text-to-video, returning task_id
 
         Args:
             at: Access Token
-            project_id: 项目ID
-            prompt: 提示词
-            model_key: veo_3_1_t2v_fast 等
-            aspect_ratio: 视频宽高比
-            user_paygate_tier: 用户等级
+            project_id: Project ID
+            prompt: Prompt
+            model_key: veo_3_1_t2v_fast and similar
+            aspect_ratio: Video aspect ratio
+            user_paygate_tier: User tier
 
         Returns:
             {
@@ -2515,7 +2515,7 @@ class _FlowClientBase(FlowFrontendMixin):
             except RuntimeError:
                 frontend_cookie_storage = ""
 
-        # 403/reCAPTCHA 重试逻辑 - reCAPTCHA evaluation failed 时允许更高重试上限
+        # 403/reCAPTCHA retry logic - allow a higher retry ceiling when reCAPTCHA evaluation failed
         max_retries = self._resolve_generation_retry_budget(config.flow_max_retries)
         if frontend_cookie_storage:
             max_retries += 1
@@ -2525,7 +2525,7 @@ class _FlowClientBase(FlowFrontendMixin):
         batch_id = str(uuid.uuid4())
         video_context_warmed = False
         while retry_attempt < max_retries:
-            # 每次重试都重新获取 reCAPTCHA token - 视频使用 VIDEO_GENERATION action
+            # Re-acquire the reCAPTCHA token on every retry - video uses the VIDEO_GENERATION action
             launch_gate_acquired = False
             launch_ok, _, _ = await self._acquire_video_launch_gate(
                 token_id=token_id,
@@ -2667,7 +2667,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 await self._notify_browser_captcha_request_finished(browser_id)
             retry_attempt += 1
         
-        # 所有重试都失败
+        # All retries failed
         raise last_error
 
     def _build_browser_style_control_headers(
@@ -2804,7 +2804,7 @@ class _FlowClientBase(FlowFrontendMixin):
         model_key: str,
         aspect_ratio: str,
     ) -> None:
-        """按当前上游真实页面顺序补齐视频提交前的最小首方初始化/telemetry链路。"""
+        """Emit the minimal first-party initialization/telemetry chain required before video submission, following the real upstream page order."""
         account_id = at[:16] if at else None
         page_url = self._build_flow_project_page_url(project_id)
         session_create_time = time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime())
@@ -3462,23 +3462,23 @@ class _FlowClientBase(FlowFrontendMixin):
         token_id: Optional[int] = None,
         token_video_concurrency: Optional[int] = None,
     ) -> dict:
-        """图生视频,返回task_id
+        """Image-to-video, returning task_id
 
         Args:
             at: Access Token
-            project_id: 项目ID
-            prompt: 提示词
+            project_id: Project ID
+            prompt: Prompt
             model_key: veo_3_1_r2v_fast_landscape
-            aspect_ratio: 视频宽高比
-            reference_images: 参考图片列表 [{"imageUsageType": "IMAGE_USAGE_TYPE_ASSET", "mediaId": "..."}]
-            user_paygate_tier: 用户等级
+            aspect_ratio: Video aspect ratio
+            reference_images: Reference image list [{"imageUsageType": "IMAGE_USAGE_TYPE_ASSET", "mediaId": "..."}]
+            user_paygate_tier: User tier
 
         Returns:
-            同 generate_video_text
+            Same as generate_video_text
         """
         url = f"{self.api_base_url}/video:batchAsyncGenerateVideoReferenceImages"
 
-        # 403/reCAPTCHA 重试逻辑 - reCAPTCHA evaluation failed 时允许更高重试上限
+        # 403/reCAPTCHA retry logic - allow a higher retry ceiling when reCAPTCHA evaluation failed
         max_retries = self._resolve_generation_retry_budget(config.flow_max_retries)
         last_error = None
         retry_attempt = 0
@@ -3486,7 +3486,7 @@ class _FlowClientBase(FlowFrontendMixin):
         batch_id = str(uuid.uuid4())
         video_context_warmed = False
         while retry_attempt < max_retries:
-            # 每次重试都重新获取 reCAPTCHA token - 视频使用 VIDEO_GENERATION action
+            # Re-acquire the reCAPTCHA token on every retry - video uses the VIDEO_GENERATION action
             launch_gate_acquired = False
             launch_ok, _, _ = await self._acquire_video_launch_gate(
                 token_id=token_id,
@@ -3592,7 +3592,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 await self._notify_browser_captcha_request_finished(browser_id)
             retry_attempt += 1
         
-        # 所有重试都失败
+        # All retries failed
         raise last_error
 
     async def generate_video_start_end(
@@ -3609,24 +3609,24 @@ class _FlowClientBase(FlowFrontendMixin):
         token_id: Optional[int] = None,
         token_video_concurrency: Optional[int] = None,
     ) -> dict:
-        """收尾帧生成视频,返回task_id
+        """Generate video from start and end frames, returning task_id
 
         Args:
             at: Access Token
-            project_id: 项目ID
-            prompt: 提示词
+            project_id: Project ID
+            prompt: Prompt
             model_key: veo_3_1_i2v_s_fast_fl
-            aspect_ratio: 视频宽高比
-            start_media_id: 起始帧mediaId
-            end_media_id: 结束帧mediaId
-            user_paygate_tier: 用户等级
+            aspect_ratio: Video aspect ratio
+            start_media_id: Start frame mediaId
+            end_media_id: End frame mediaId
+            user_paygate_tier: User tier
 
         Returns:
-            同 generate_video_text
+            Same as generate_video_text
         """
         url = f"{self.api_base_url}/video:batchAsyncGenerateVideoStartAndEndImage"
 
-        # 403/reCAPTCHA 重试逻辑 - reCAPTCHA evaluation failed 时允许更高重试上限
+        # 403/reCAPTCHA retry logic - allow a higher retry ceiling when reCAPTCHA evaluation failed
         max_retries = self._resolve_generation_retry_budget(config.flow_max_retries)
         last_error = None
         retry_attempt = 0
@@ -3634,7 +3634,7 @@ class _FlowClientBase(FlowFrontendMixin):
         batch_id = str(uuid.uuid4())
         video_context_warmed = False
         while retry_attempt < max_retries:
-            # 每次重试都重新获取 reCAPTCHA token - 视频使用 VIDEO_GENERATION action
+            # Re-acquire the reCAPTCHA token on every retry - video uses the VIDEO_GENERATION action
             launch_gate_acquired = False
             launch_ok, _, _ = await self._acquire_video_launch_gate(
                 token_id=token_id,
@@ -3741,7 +3741,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 await self._notify_browser_captcha_request_finished(browser_id)
             retry_attempt += 1
         
-        # 所有重试都失败
+        # All retries failed
         raise last_error
 
     async def generate_video_start_image(
@@ -3757,23 +3757,23 @@ class _FlowClientBase(FlowFrontendMixin):
         token_id: Optional[int] = None,
         token_video_concurrency: Optional[int] = None,
     ) -> dict:
-        """仅首帧生成视频,返回task_id
+        """Generate video from the first frame only, returning task_id
 
         Args:
             at: Access Token
-            project_id: 项目ID
-            prompt: 提示词
-            model_key: veo_3_1_i2v_s_fast_fl等
-            aspect_ratio: 视频宽高比
-            start_media_id: 起始帧mediaId
-            user_paygate_tier: 用户等级
+            project_id: Project ID
+            prompt: Prompt
+            model_key: veo_3_1_i2v_s_fast_fl and similar
+            aspect_ratio: Video aspect ratio
+            start_media_id: Start frame mediaId
+            user_paygate_tier: User tier
 
         Returns:
-            同 generate_video_text
+            Same as generate_video_text
         """
         url = f"{self.api_base_url}/video:batchAsyncGenerateVideoStartImage"
 
-        # 403/reCAPTCHA 重试逻辑 - reCAPTCHA evaluation failed 时允许更高重试上限
+        # 403/reCAPTCHA retry logic - allow a higher retry ceiling when reCAPTCHA evaluation failed
         max_retries = self._resolve_generation_retry_budget(config.flow_max_retries)
         last_error = None
         retry_attempt = 0
@@ -3781,7 +3781,7 @@ class _FlowClientBase(FlowFrontendMixin):
         batch_id = str(uuid.uuid4())
         video_context_warmed = False
         while retry_attempt < max_retries:
-            # 每次重试都重新获取 reCAPTCHA token - 视频使用 VIDEO_GENERATION action
+            # Re-acquire the reCAPTCHA token on every retry - video uses the VIDEO_GENERATION action
             launch_gate_acquired = False
             launch_ok, _, _ = await self._acquire_video_launch_gate(
                 token_id=token_id,
@@ -3843,7 +3843,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 ),
                 "videoModelKey": model_key,
                 "startImage": {"mediaId": start_media_id},
-                # 注意: 没有endImage字段,只用首帧
+                # Note: there is no endImage field; only the first frame is used
                 "metadata": {},
             }
             json_data = {
@@ -3888,10 +3888,10 @@ class _FlowClientBase(FlowFrontendMixin):
                 await self._notify_browser_captcha_request_finished(browser_id)
             retry_attempt += 1
         
-        # 所有重试都失败
+        # All retries failed
         raise last_error
 
-    # ========== 视频续写 (Video Extend) ==========
+    # ========== Video Extend ==========
 
     async def generate_video_extend(
         self,
@@ -3905,23 +3905,23 @@ class _FlowClientBase(FlowFrontendMixin):
         token_id: Optional[int] = None,
         token_video_concurrency: Optional[int] = None,
     ) -> dict:
-        """视频续写,基于已生成的视频延伸7秒
+        """Video extension: extend an already generated video by 7 seconds
 
         Args:
             at: Access Token
-            project_id: 项目ID
-            prompt: 续写提示词
-            model_key: veo_3_1_extend_portrait / veo_3_1_extend 等
-            aspect_ratio: 视频宽高比
-            video_media_id: 源视频的 mediaGenerationId
-            user_paygate_tier: 用户等级
+            project_id: Project ID
+            prompt: Extension prompt
+            model_key: veo_3_1_extend_portrait / veo_3_1_extend and similar
+            aspect_ratio: Video aspect ratio
+            video_media_id: mediaGenerationId of the source video
+            user_paygate_tier: User tier
 
         Returns:
-            同 generate_video_text (operations 列表)
+            Same as generate_video_text (operations list)
         """
         url = f"{self.api_base_url}/video:batchAsyncGenerateVideoExtendVideo"
 
-        # 403/reCAPTCHA 重试逻辑 - reCAPTCHA evaluation failed 时允许更高重试上限
+        # 403/reCAPTCHA retry logic - allow a higher retry ceiling when reCAPTCHA evaluation failed
         max_retries = self._resolve_generation_retry_budget(config.flow_max_retries)
         last_error = None
         retry_attempt = 0
@@ -4003,7 +4003,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 "useV2ModelConfig": True,
             }
 
-            # Debug: 打印请求体用于调试
+            # Debug: print the request body for debugging
             import json as _json
 
             debug_logger.log_info(f"[VIDEO EXTEND] Request URL: {url}")
@@ -4044,10 +4044,10 @@ class _FlowClientBase(FlowFrontendMixin):
                 await self._notify_browser_captcha_request_finished(browser_id)
             retry_attempt += 1
 
-        # 所有重试都失败
+        # All retries failed
         raise last_error
 
-    # ========== 视频拼接 (Video Concatenation) ==========
+    # ========== Video Concatenation ==========
 
     async def run_concatenation(
         self,
@@ -4056,15 +4056,15 @@ class _FlowClientBase(FlowFrontendMixin):
         extend_media_id: str,
     ) -> dict:
         """
-        调用 Google runVideoFxConcatenation API 拼接视频
+        Concatenate videos via the Google runVideoFxConcatenation API
         
         Args:
-            at: 认证 token
-            original_media_id: 原始视频的 mediaGenerationId (UUID)
-            extend_media_id: 续写视频的 mediaGenerationId (UUID)
+            at: Auth token
+            original_media_id: mediaGenerationId (UUID) of the original video
+            extend_media_id: mediaGenerationId (UUID) of the extended video
         
         Returns:
-            包含 operation name 的字典
+            Dict containing the operation name
         """
         url = f"{self.api_base_url}:runVideoFxConcatenation"
         
@@ -4105,16 +4105,16 @@ class _FlowClientBase(FlowFrontendMixin):
         poll_interval: int = 3,
     ) -> dict:
         """
-        轮询拼接任务状态，直到完成或超时
+        Poll the concatenation task status until it completes or times out
         
         Args:
-            at: 认证 token
-            operation_name: 拼接任务的 operation name
-            timeout: 超时秒数
-            poll_interval: 轮询间隔秒数
+            at: Auth token
+            operation_name: operation name of the concatenation task
+            timeout: Timeout in seconds
+            poll_interval: Poll interval in seconds
         
         Returns:
-            包含 outputUri 和 mediaGenerationId 的字典
+            Dict containing outputUri and mediaGenerationId
         """
         url = f"{self.api_base_url}:runVideoFxCheckConcatenationStatus"
         json_data = {"operation": {"operation": {"name": operation_name}}}
@@ -4143,14 +4143,14 @@ class _FlowClientBase(FlowFrontendMixin):
                 f"encodedVideo={ev_len} chars, elapsed={elapsed}s, keys={all_keys}"
             )
             
-            # 优先检查 outputUri
+            # Check outputUri first
             if output_uri:
                 debug_logger.log_info(
                     f"[CONCAT] 拼接完成 (outputUri): {output_uri[:120]}"
                 )
                 return result
             
-            # Google API 返回 encodedVideo（base64 编码的 MP4）而不是 outputUri
+            # The Google API returns encodedVideo (base64-encoded MP4) instead of outputUri
             if encoded_video and "SUCCESSFUL" in status:
                 try:
                     import os
@@ -4158,7 +4158,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     video_bytes = base64.b64decode(encoded_video)
                     video_filename = f"concat_{uuid.uuid4().hex[:12]}.mp4"
                     
-                    # 保存到 tmp/ 目录（FastAPI 已挂载为 /tmp 静态文件）
+                    # Save to the tmp/ directory (FastAPI already mounts it as /tmp static files)
                     save_dir = "tmp"
                     os.makedirs(save_dir, exist_ok=True)
                     save_path = os.path.join(save_dir, video_filename)
@@ -4166,7 +4166,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     with open(save_path, "wb") as f:
                         f.write(video_bytes)
                     
-                    # 构造 URL：FastAPI 挂载了 /tmp -> /app/tmp/
+                    # Build the URL: FastAPI mounts /tmp -> /app/tmp/
                     serve_url = f"/tmp/{video_filename}"
                     debug_logger.log_info(
                         f"[CONCAT] 拼接完成 (encodedVideo): 保存 {len(video_bytes)} bytes -> {serve_url}"
@@ -4196,7 +4196,7 @@ class _FlowClientBase(FlowFrontendMixin):
         debug_logger.log_error(f"[CONCAT] 超时 ({timeout}s)，放弃拼接")
         raise Exception(f"视频拼接超时 ({timeout}s)")
 
-    # ========== 视频放大 (Video Upsampler) ==========
+    # ========== Video Upsampler ==========
 
     async def upsample_video(
         self,
@@ -4210,22 +4210,22 @@ class _FlowClientBase(FlowFrontendMixin):
         token_id: Optional[int] = None,
         token_video_concurrency: Optional[int] = None,
     ) -> dict:
-        """视频放大到 4K/1080P，返回 task_id
+        """Upscale video to 4K/1080P, returning task_id
 
         Args:
             at: Access Token
-            project_id: 项目ID
-            video_media_id: 视频的 mediaId
-            aspect_ratio: 视频宽高比 VIDEO_ASPECT_RATIO_PORTRAIT/LANDSCAPE
-            resolution: VIDEO_RESOLUTION_4K 或 VIDEO_RESOLUTION_1080P
-            model_key: veo_3_1_upsampler_4k 或 veo_3_1_upsampler_1080p
+            project_id: Project ID
+            video_media_id: mediaId of the video
+            aspect_ratio: Video aspect ratio VIDEO_ASPECT_RATIO_PORTRAIT/LANDSCAPE
+            resolution: VIDEO_RESOLUTION_4K or VIDEO_RESOLUTION_1080P
+            model_key: veo_3_1_upsampler_4k or veo_3_1_upsampler_1080p
 
         Returns:
-            同 generate_video_text
+            Same as generate_video_text
         """
         url = f"{self.api_base_url}/video:batchAsyncGenerateVideoUpsampleVideo"
 
-        # 403/reCAPTCHA 重试逻辑 - reCAPTCHA evaluation failed 时允许更高重试上限
+        # 403/reCAPTCHA retry logic - allow a higher retry ceiling when reCAPTCHA evaluation failed
         max_retries = self._resolve_generation_retry_budget(config.flow_max_retries)
         last_error = None
         retry_attempt = 0
@@ -4340,7 +4340,7 @@ class _FlowClientBase(FlowFrontendMixin):
         
         raise last_error
 
-    # ========== 任务轮询 (使用AT) ==========
+    # ========== Task polling (uses AT) ==========
 
     async def check_video_status(
         self,
@@ -4349,18 +4349,18 @@ class _FlowClientBase(FlowFrontendMixin):
         token_id: Optional[int] = None,
         google_cookies: Optional[str] = None,
     ) -> dict:
-        """查询视频生成状态
+        """Query video generation status
 
         Args:
             at: Access Token
-            operations: 内部操作列表；当前上游状态查询仅使用其中抽取出的 media 引用
+            operations: Internal operation list; the current upstream status query only uses the media references extracted from it
 
         Returns:
             {
                 "operations": [{
                     "operation": {
                         "name": "task_id",
-                        "metadata": {...}  # 完成时包含视频信息
+                        "metadata": {...}  # contains video info once completed
                     },
                     "status": "MEDIA_GENERATION_STATUS_SUCCESSFUL"
                 }]
@@ -4475,14 +4475,14 @@ class _FlowClientBase(FlowFrontendMixin):
             raise last_error
         raise RuntimeError("视频状态查询失败")
 
-    # ========== 媒体删除 (使用ST) ==========
+    # ========== Media deletion (uses ST) ==========
 
     async def delete_media(self, st: str, media_names: List[str]):
-        """删除媒体
+        """Delete media
 
         Args:
             st: Session Token
-            media_names: 媒体ID列表
+            media_names: List of media IDs
         """
         url = f"{self.labs_base_url}/trpc/media.deleteMedia"
         json_data = {"json": {"names": media_names}}
@@ -4497,7 +4497,7 @@ class _FlowClientBase(FlowFrontendMixin):
         media_name: str,
         media_url_type: str = "MEDIA_URL_TYPE_FULL_MEDIA",
     ) -> Optional[str]:
-        """通过 trpc media.getMediaUrlRedirect 获取媒体实际访问 URL。"""
+        """Resolve the actual media access URL via trpc media.getMediaUrlRedirect."""
         normalized_media_name = str(media_name or "").strip()
         if not normalized_media_name:
             return None
@@ -4565,7 +4565,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 f"获取媒体重定向地址失败: media={normalized_media_name}, type={media_url_type}, error={e}"
             ) from e
 
-    # ========== 辅助方法 ==========
+    # ========== Helper methods ==========
 
     async def _handle_retryable_generation_error(
         self,
@@ -4577,7 +4577,7 @@ class _FlowClientBase(FlowFrontendMixin):
         log_prefix: str,
         defer_browser_error_notification: bool = False,
     ) -> bool:
-        """统一处理生成链路的重试判定与打码自愈通知。"""
+        """Unified retry decision and captcha self-healing notification for the generation chain."""
         error_str = str(error)
         retry_reason = self._get_retry_reason(error_str)
         retry_delay = self._get_retry_delay_seconds(error_str, retry_attempt)
@@ -4638,7 +4638,7 @@ class _FlowClientBase(FlowFrontendMixin):
     async def _build_team_captcha_cookie_map(
         self, token_id: Optional[int]
     ) -> Dict[str, str]:
-        """团队打码下发的 Cookie 键值对（按 flow.google.com 请求口径选取）。"""
+        """Cookie key-value pairs issued by team captcha (selected for the flow.google.com request scope)."""
         try:
             cookie_storage = await self._resolve_flow_frontend_cookie_storage(
                 token_id=token_id
@@ -4660,13 +4660,13 @@ class _FlowClientBase(FlowFrontendMixin):
         return cookie_map
 
     def _resolve_third_party_captcha_method(self) -> Optional[str]:
-        """返回第一个已配置密钥的第三方打码方式（yescaptcha 优先）。
+        """Return the first third-party captcha method with a configured key (yescaptcha preferred).
 
-        SPrCad 等 batchexecute RPC 只接受第三方打码 token；
-        browser/personal harvest 出的 token 会被 UNUSUAL_ACTIVITY 拒绝。
+        batchexecute RPCs such as SPrCad only accept third-party captcha tokens;
+        tokens harvested by browser/personal are rejected with UNUSUAL_ACTIVITY.
         """
         if config.captcha_method == FLOW2API_TEAM_CAPTCHA_METHOD:
-            # 内置团队打码始终可用（地址/密钥写死），优先作为第三方 token 来源。
+            # Built-in team captcha is always available (address/key hardcoded) and is preferred as the third-party token source.
             return FLOW2API_TEAM_CAPTCHA_METHOD
         for method, attr in (
             ("yescaptcha", "yescaptcha_api_key"),
@@ -4684,7 +4684,7 @@ class _FlowClientBase(FlowFrontendMixin):
     def _extract_browser_captcha_session_id(
         browser_ref: Optional[Union[int, str]],
     ) -> Optional[str]:
-        """从 browser 请求句柄提取本次 harvest 对应的 Flow session id。"""
+        """Extract the Flow session id for this harvest from the browser request handle."""
         if not isinstance(browser_ref, str):
             return None
         raw = browser_ref.strip()
@@ -4698,7 +4698,7 @@ class _FlowClientBase(FlowFrontendMixin):
         return request_ref
 
     def _get_retry_reason(self, error_str: str) -> Optional[str]:
-        """判断是否需要重试，返回日志提示内容"""
+        """Decide whether a retry is needed and return the log hint text"""
         error_lower = error_str.lower()
         if "browser captcha queue wait timeout" in error_lower:
             return None
@@ -4707,7 +4707,7 @@ class _FlowClientBase(FlowFrontendMixin):
         if "error_no_slot_available" in error_lower:
             return "打码服务资源不足"
         if "model_access_denied" in error_lower:
-            # 账号无对应模型权限，重试不会改变结果
+            # The account lacks permission for this model; retrying will not change the result
             return None
         if "403" in error_lower:
             return "403错误"
@@ -4824,13 +4824,13 @@ class _FlowClientBase(FlowFrontendMixin):
         error_reason: Optional[str] = None,
         error_message: Optional[str] = None,
     ):
-        """通知浏览器打码服务执行失败自愈。
+        """Notify the browser captcha service to perform failure self-healing.
         
         Args:
-            browser_id: browser 模式使用的浏览器 ID
-            project_id: personal 模式使用的 project_id
-            error_reason: 已归类的错误原因
-            error_message: 原始错误文本
+            browser_id: Browser ID used by browser mode
+            project_id: project_id used by personal mode
+            error_reason: Classified error reason
+            error_message: Original error text
         """
         context = self._get_captcha_request_context()
         if context.get("browser_ref") != browser_id or context.get("project_id") != project_id:
@@ -4895,7 +4895,7 @@ class _FlowClientBase(FlowFrontendMixin):
     async def _notify_browser_captcha_request_finished(
         self, browser_id: Optional[Union[int, str]] = None, *, success: Optional[bool] = None,
     ):
-        """通知有头浏览器：上游图片/视频请求已结束，可关闭对应打码浏览器。"""
+        """Notify the headed browser that the upstream image/video request has ended, so the corresponding captcha browser can be closed."""
         context = self._get_captcha_request_context()
         method = context.get("method") if context.get("browser_ref") == browser_id else None
         method = method or config.captcha_method
@@ -4928,11 +4928,11 @@ class _FlowClientBase(FlowFrontendMixin):
             self._set_captcha_request_context(None)
 
     def _generate_session_id(self) -> str:
-        """生成sessionId: ;timestamp"""
+        """Generate sessionId: ;timestamp"""
         return f";{int(time.time() * 1000)}"
 
     def _generate_scene_id(self) -> str:
-        """生成sceneId: UUID"""
+        """Generate sceneId: UUID"""
         return str(uuid.uuid4())
 
     def _get_remote_browser_service_config(self) -> tuple[str, str, int]:
@@ -5051,8 +5051,8 @@ class _FlowClientBase(FlowFrontendMixin):
             )
 
         try:
-            # remote_browser 控制面只需要稳定传输 JSON，不需要浏览器指纹伪装。
-            # 使用 httpx 可以避免 curl_cffi 在当前环境下 POST body 被吞掉。
+            # The remote_browser control plane only needs to transport JSON reliably; no browser fingerprint masquerading is needed.
+            # Using httpx avoids curl_cffi swallowing the POST body in the current environment.
             async with httpx.AsyncClient(
                 follow_redirects=False, trust_env=False
             ) as session:
@@ -5110,7 +5110,7 @@ class _FlowClientBase(FlowFrontendMixin):
         *,
         cooldown_seconds: float = 8.0,
     ) -> bool:
-        """让本地 remote_browser 服务提前开始补池，尽量把取 token 等待搬到前面。"""
+        """Start refilling the pool early on the local remote_browser service so the token-acquisition wait is moved forward."""
         if config.captcha_method != "remote_browser":
             return False
 
@@ -5171,7 +5171,7 @@ class _FlowClientBase(FlowFrontendMixin):
         base_timeout = max(5, int(config.remote_browser_timeout or 60))
         action_name = str(action or "").strip().upper()
 
-        # 这里只是拿 reCAPTCHA token，不应该跟整条生成链路共用数百秒级超时。
+        # This only acquires a reCAPTCHA token; it should not share the hundreds-of-seconds timeout of the whole generation chain.
         target_timeout = 45 if action_name == "VIDEO_GENERATION" else 35
         return max(12, min(base_timeout, target_timeout))
 
@@ -5183,22 +5183,22 @@ class _FlowClientBase(FlowFrontendMixin):
         website_url: Optional[str] = None,
         method_override: Optional[str] = None,
     ) -> tuple[Optional[str], Optional[Union[int, str]]]:
-        """获取reCAPTCHA token - 支持多种打码方式
+        """Acquire a reCAPTCHA token - supports multiple captcha methods
         
         Args:
-            project_id: 项目ID
-            action: reCAPTCHA action类型
-                - IMAGE_GENERATION: 图片生成和2K/4K图片放大 (默认)
-                - VIDEO_GENERATION: 视频生成和视频放大
-            token_id: 当前业务 token id（browser 模式下用于读取 token 级打码代理）
-            method_override: 强制指定打码方式（如 "yescaptcha"）。
-                用于 harvest token 不被目标 RPC 接受的场景（如 SPrCad 放大）。
+            project_id: Project ID
+            action: reCAPTCHA action type
+                - IMAGE_GENERATION: Image generation and 2K/4K image upscaling (default)
+                - VIDEO_GENERATION: Video generation and video upscaling
+            token_id: Current business token id (used in browser mode to read the token-level captcha proxy)
+            method_override: Force a specific captcha method (e.g. "yescaptcha").
+                Used when the harvested token is not accepted by the target RPC (e.g. SPrCad upscaling).
         
         Returns:
-            (token, browser_id) 元组。
-            - browser 模式: browser_id 为本地浏览器 ID
-            - remote_browser 模式: browser_id 为远程 session_id
-            - 其他模式: browser_id 为 None
+            (token, browser_id) tuple.
+            - browser mode: browser_id is the local browser ID
+            - remote_browser mode: browser_id is the remote session_id
+            - other modes: browser_id is None
         """
         captcha_method = method_override or config.captcha_method
         previous = self._get_captcha_request_context()
@@ -5228,7 +5228,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 self._set_request_fingerprint(None)
                 return None, None
 
-        # 内置浏览器打码 (nodriver)
+        # Built-in browser captcha (nodriver)
         if captcha_method == "personal":
             debug_logger.log_info(f"[reCAPTCHA] 使用 personal 模式")
             try:
@@ -5337,7 +5337,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     })
                 return token, browser_ref
             except RuntimeError as e:
-                # 捕获 Docker 环境或依赖缺失的明确错误
+                # Capture explicit errors for missing Docker environment or dependencies
                 error_msg = str(e)
                 debug_logger.log_error(f"[reCAPTCHA Personal] {error_msg}")
                 print(f"[reCAPTCHA] ❌ 内置浏览器打码失败: {error_msg}")
@@ -5352,7 +5352,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 debug_logger.log_error(f"[reCAPTCHA Personal] 错误: {str(e)}")
                 self._set_request_fingerprint(None)
                 return None, None
-        # 有头浏览器打码 (playwright)
+        # Headed browser captcha (playwright)
         elif captcha_method == "browser":
             try:
                 from .browser_captcha import BrowserCaptchaService
@@ -5379,7 +5379,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 from .browser_captcha import BrowserCaptchaQueueTimeout
                 if isinstance(e, BrowserCaptchaQueueTimeout):
                     raise
-                # 捕获 Docker 环境或依赖缺失的明确错误
+                # Capture explicit errors for missing Docker environment or dependencies
                 error_msg = str(e)
                 debug_logger.log_error(f"[reCAPTCHA Browser] {error_msg}")
                 print(f"[reCAPTCHA] ❌ 有头浏览器打码失败: {error_msg}")
@@ -5426,7 +5426,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 debug_logger.log_error(f"[reCAPTCHA RemoteBrowser] 错误: {str(e)}")
                 self._set_request_fingerprint(None)
                 return None, None
-        # API打码服务
+        # API captcha service
         elif captcha_method in [
             "yescaptcha",
             "flow2api_team",
@@ -5489,10 +5489,10 @@ class _FlowClientBase(FlowFrontendMixin):
             if api_result is None:
                 return None, None
             token, captcha_user_agent = api_result
-            # 把打码服务返回的 userAgent 合并到 fingerprint, 让 Flow API 提交请求沿用同一 UA。
-            # 否则 Google reCAPTCHA V3 评估会因 UA 不一致判定 UNUSUAL_ACTIVITY 并返回
-            # "reCAPTCHA evaluation failed"。其他 Client Hint (sec-ch-ua-platform 等)
-            # 由 _make_request 根据 UA 自动推断 (Windows → "Windows", etc.)。
+            # Merge the userAgent returned by the captcha service into the fingerprint so Flow API submissions reuse the same UA.
+            # Otherwise Google reCAPTCHA V3 evaluation flags UNUSUAL_ACTIVITY for the UA mismatch and returns
+            # "reCAPTCHA evaluation failed". Other Client Hints (sec-ch-ua-platform, etc.)
+            # are inferred automatically from the UA by _make_request (Windows → "Windows", etc.).
             if captcha_user_agent:
                 existing_fp = self._request_fingerprint_ctx.get()
                 merged_fp = dict(existing_fp) if isinstance(existing_fp, dict) else {}
@@ -5518,23 +5518,23 @@ class _FlowClientBase(FlowFrontendMixin):
         website_url: Optional[str] = None,
         token_id: Optional[int] = None,
     ) -> Optional[tuple[str, str]]:
-        """通用API打码服务
+        """Generic API captcha service
 
         Args:
-            method: 打码服务类型
-            project_id: 项目ID
-            action: reCAPTCHA action类型 (IMAGE_GENERATION 或 VIDEO_GENERATION)
-            proxy_url: 预解析后的代理地址，确保打码与后续提交走同一出口
-            user_agent: 显式传给打码服务的 UA，避免 solve / submit 环境不一致
+            method: Captcha service type
+            project_id: Project ID
+            action: reCAPTCHA action type (IMAGE_GENERATION or VIDEO_GENERATION)
+            proxy_url: Pre-resolved proxy address so captcha solving and the subsequent submission use the same egress
+            user_agent: UA explicitly passed to the captcha service to avoid a solve/submit environment mismatch
 
         Returns:
-            (gRecaptchaResponse, userAgent) 元组, 或 None (失败时)。
-            返回 userAgent 是为了让后续 Flow API 请求沿用打码时的 UA,
-            避免 reCAPTCHA V3 评估因 UA 不一致判定 UNUSUAL_ACTIVITY。
+            (gRecaptchaResponse, userAgent) tuple, or None on failure.
+            userAgent is returned so subsequent Flow API requests reuse the UA used for captcha solving,
+            avoiding UNUSUAL_ACTIVITY from reCAPTCHA V3 evaluation due to a UA mismatch.
         """
-        # 获取配置
+        # Get configuration
         if method == "flow2api_team":
-            # 内置团队打码：地址与密钥写死，不接受配置覆盖。
+            # Built-in team captcha: address and key are hardcoded; configuration overrides are not accepted.
             client_key = FLOW2API_TEAM_CAPTCHA_CLIENT_KEY
             base_url = FLOW2API_TEAM_CAPTCHA_BASE_URL
         elif method == "yescaptcha":
@@ -5575,8 +5575,8 @@ class _FlowClientBase(FlowFrontendMixin):
         page_action = runtime_settings["page_action"]
 
         try:
-            # 获取代理配置，让打码API请求也走代理
-            # 注意：curl_cffi 对 SOCKS5 使用 proxy 参数，HTTP 代理使用 proxies 参数
+            # Get the proxy config so captcha API requests also go through the proxy
+            # Note: curl_cffi uses the proxy argument for SOCKS5 and the proxies argument for HTTP proxies
             proxy = None
             proxies = None
             resolved_proxy_url = str(proxy_url or "").strip()
@@ -5587,10 +5587,10 @@ class _FlowClientBase(FlowFrontendMixin):
                     ).strip()
                     if resolved_proxy_url:
                         if resolved_proxy_url.startswith("socks5://"):
-                            # curl_cffi 对 SOCKS5 使用 proxy 参数
+                            # curl_cffi uses the proxy argument for SOCKS5
                             proxy = resolved_proxy_url
                         else:
-                            # HTTP/HTTPS 代理使用 proxies 字典
+                            # HTTP/HTTPS proxies use the proxies dict
                             proxies = {
                                 "http": resolved_proxy_url,
                                 "https": resolved_proxy_url,
@@ -5691,8 +5691,8 @@ class _FlowClientBase(FlowFrontendMixin):
                 if min_score is not None:
                     create_data["task"]["minScore"] = min_score
                 if method == FLOW2API_TEAM_CAPTCHA_METHOD:
-                    # 团队打码额外支持把账号 Cookie 与出口代理一起下发，
-                    # 打码侧用同一登录态 + 同一出口 IP 取 token，分数更稳。
+                    # Team captcha additionally supports sending the account Cookie together with the egress proxy,
+                    # so captcha solving fetches tokens with the same login state + same egress IP, giving more stable scores.
                     team_cookie_map = await self._build_team_captcha_cookie_map(
                         token_id
                     )
@@ -5771,7 +5771,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 get_url = f"{base_url}/getTaskResult"
                 for i in range(40):
                     get_data = {"clientKey": client_key, "taskId": task_id}
-                    # 根据代理类型使用不同参数
+                    # Use different arguments depending on the proxy type
                     if proxy:
                         result = await session.post(
                             get_url, json=get_data, impersonate="chrome", proxy=proxy
@@ -5802,8 +5802,8 @@ class _FlowClientBase(FlowFrontendMixin):
                                 )
                             )
                             debug_logger.log_info(f"[reCAPTCHA {method}] Token获取成功")
-                            # 同时返回 userAgent, 调用方会注入到 fingerprint context,
-                            # 保证 Flow API 提交请求时使用与打码一致的 UA。
+                            # Also return userAgent; the caller injects it into the fingerprint context,
+                            # ensuring Flow API submissions use the same UA as captcha solving.
                             user_agent = solution.get("userAgent")
                             return response, user_agent
 

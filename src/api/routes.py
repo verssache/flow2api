@@ -327,7 +327,7 @@ async def _extract_prompt_and_images_from_openai_messages(
                     prompt_parts.append(text)
             elif item_type == "image_url":
                 image_url = item.get("image_url", {}).get("url", "")
-                # extend://MEDIA_ID 用于视频续写
+                # extend://MEDIA_ID is used for video continuation
                 if image_url.startswith("extend://"):
                     video_media_id = image_url[len("extend://"):]
                 else:
@@ -429,7 +429,7 @@ def _resolve_request_model(
 
 
 def _get_request_base_url(request: Request) -> Optional[str]:
-    """根据实际请求头推导对外可访问的基础地址。"""
+    """Derive the externally reachable base URL from actual request headers."""
     forwarded_proto = (
         (request.headers.get("x-forwarded-proto") or "").split(",")[0].strip()
     )

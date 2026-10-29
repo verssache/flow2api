@@ -1,13 +1,13 @@
-"""Cookie 快照兼容性：缺失 get_updated_flow_cookies 时不能抛 AttributeError。
+"""Cookie snapshot compatibility: must not raise AttributeError when get_updated_flow_cookies is missing.
 
-历史故障：自定义/旧版 flow_frontend 覆盖了上游新增的 Cookie 作用域方法，
-导致添加 Google Cookie 时直接失败：
+Historical failure: a custom/legacy flow_frontend overrode the newly added upstream Cookie scope method,
+causing direct failure when adding Google Cookie:
 
-    添加失败: Google Cookie 验证失败：
+    Add failed: Google Cookie validation failed:
     'FlowClient' object has no attribute 'get_updated_flow_cookies'
 
-修复策略：调用点改为安全取值（getattr + 降级返回原始 Cookie 串），
-既保留上游 Cookie 轮换快照能力，也能容忍不完整的 mixin 覆盖。
+Fix strategy: change the call site to safe access (getattr + fallback returning the original Cookie string),
+preserving upstream Cookie rotation snapshot support while tolerating incomplete mixin overrides.
 """
 
 import unittest
@@ -19,7 +19,7 @@ HELPERS = (client_helper, current_helper)
 
 
 class _NoSuchMethod:
-    """模拟缺少 get_updated_flow_cookies 的旧版 mixin。"""
+    """Simulate a legacy mixin lacking get_updated_flow_cookies."""
 
 
 class _WithMethod:

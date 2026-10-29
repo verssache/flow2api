@@ -1,7 +1,7 @@
-"""守护测试：任何地方都不得再产生“Flow 登录账号与当前 Token 不一致”这类硬失败提示。
+"""Guard test: no place may ever produce hard-failure messages like "Flow login account does not match the current Token".
 
-真实账号以 Flow 页面返回为准，刷新时自动更正本地邮箱；
-只有「该账号已被另一个 Token 占用」才会报错。
+The real account is authoritative from the Flow page and the local email is auto-corrected on refresh;
+only "this account is already occupied by another Token" may raise.
 """
 
 import pathlib
@@ -32,7 +32,7 @@ class NoIdentityMismatchErrorTests(unittest.TestCase):
 
 
 class LegacyRefreshResultSanitizerTests(unittest.TestCase):
-    """旧库里残留的历史错误不允许再回显到前端。"""
+    """Legacy errors left in old databases must not be echoed back to the frontend."""
 
     def setUp(self):
         from src.api import admin as admin_mod
@@ -40,14 +40,14 @@ class LegacyRefreshResultSanitizerTests(unittest.TestCase):
         self.admin = admin_mod
 
     def legacy_text(self):
-        # 拼接构造，避免源码里出现被禁止的完整提示语
+        # Constructed by concatenation to keep the forbidden full message out of the source
         return (
             "RuntimeError: Flow 登录账号"
             + "与当前 Token 不一致，请同步对应账号的 Google Cookies"
         )
 
     def test_legacy_identity_error_is_dropped(self):
-        # 这类历史报错不再展示：统一清洗成空串
+        # Such legacy errors are no longer shown: normalized to an empty string
         self.assertEqual(self.admin._sanitize_refresh_result(self.legacy_text()), "")
 
     def test_other_errors_are_kept(self):

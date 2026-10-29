@@ -203,7 +203,7 @@ class ProtocolLogin:
                 expected_email
                 and account_email.casefold() != expected_email.casefold()
             ):
-                # 邮箱以 Flow 页面为准，调用方据此自动更正本地账号信息。
+                # The email is authoritative from the Flow page; callers use it to auto-correct local account info.
                 debug_logger.log_warning(
                     f"[PROTOCOL_LOGIN] 登录账号已变更: {expected_email} -> {account_email}"
                 )

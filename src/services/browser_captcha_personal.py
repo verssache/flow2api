@@ -1,7 +1,7 @@
 """
-浏览器自动化获取 reCAPTCHA token
-使用 nodriver (undetected-chromedriver 继任者) 实现反检测浏览器
-支持常驻模式：维护全局共享的常驻标签页池，即时生成 token
+Browser automation for obtaining reCAPTCHA tokens.
+Uses nodriver (the successor to undetected-chromedriver) for an anti-detection browser.
+Supports resident mode: maintains a globally shared pool of resident tabs and generates tokens on demand.
 """
 
 import asyncio
@@ -46,7 +46,7 @@ from .browser_cookie_utils import (
     normalize_cookie_storage_text,
 )
 
-# flow2api 缺少的配置常量和函数，内联定义
+# Config constants and helpers missing from flow2api, defined inline
 TOKEN_POOL_SIZE_MAX = 500
 PERSONAL_POOL_MAX_TOTAL_RESIDENT_TABS = 50
 
@@ -91,12 +91,12 @@ PERSONAL_GOOGLE_FAMILY_COOKIE_MIRROR_URLS = (
 _recaptcha_session_cookies: Optional[Dict[str, str]] = None
 _recaptcha_session_cookies_fetched_at: float = 0.0
 _RECAPTCHA_SESSION_COOKIES_TTL: float = (
-    3600.0  # 1h 缓存周期，避免频繁导航打断 resident tab
+    3600.0  # 1h cache TTL to avoid frequent navigation disrupting the resident tab
 )
 
 
 def get_cached_session_cookies() -> Optional[Dict[str, str]]:
-    """读取缓存的 Google session cookies。"""
+    """Read the cached Google session cookies."""
     global _recaptcha_session_cookies, _recaptcha_session_cookies_fetched_at
     if not _recaptcha_session_cookies:
         return None
@@ -109,7 +109,7 @@ def get_cached_session_cookies() -> Optional[Dict[str, str]]:
 
 
 def set_cached_session_cookies(cookies: Dict[str, str]):
-    """写入 session cookie 缓存。"""
+    """Write the session cookie cache."""
     global _recaptcha_session_cookies, _recaptcha_session_cookies_fetched_at
     _recaptcha_session_cookies = dict(cookies)
     _recaptcha_session_cookies_fetched_at = time.time()
@@ -120,7 +120,7 @@ def set_cached_session_cookies(cookies: Dict[str, str]):
 
 
 def clear_cached_session_cookies():
-    """清空 runtime 级 Google session cookie 缓存。"""
+    """Clear the runtime-level Google session cookie cache."""
     global _recaptcha_session_cookies, _recaptcha_session_cookies_fetched_at
     _recaptcha_session_cookies = None
     _recaptcha_session_cookies_fetched_at = 0.0
@@ -175,13 +175,13 @@ PERSONAL_RUNTIME_TMP_DIR = PERSONAL_RUNTIME_ROOT / "tmp"
 PERSONAL_RUNTIME_DATA_DIR = PERSONAL_RUNTIME_ROOT / "data"
 
 
-# ==================== Docker 环境检测 ====================
+# ==================== Docker environment detection ====================
 def _is_running_in_docker() -> bool:
-    """检测是否在 Docker 容器中运行"""
-    # 方法1: 检查 /.dockerenv 文件
+    """Detect whether running inside a Docker container."""
+    # Method 1: check for the /.dockerenv file
     if os.path.exists("/.dockerenv"):
         return True
-    # 方法2: 检查 cgroup
+    # Method 2: check cgroup
     try:
         with open("/proc/1/cgroup", "r") as f:
             content = f.read()
@@ -189,7 +189,7 @@ def _is_running_in_docker() -> bool:
                 return True
     except:
         pass
-    # 方法3: 检查环境变量
+    # Method 3: check environment variables
     if os.environ.get("DOCKER_CONTAINER") or os.environ.get("KUBERNETES_SERVICE_HOST"):
         return True
     return False
@@ -199,7 +199,7 @@ IS_DOCKER = _is_running_in_docker()
 
 
 def _is_truthy_env(name: str) -> bool:
-    """判断环境变量是否为 true。"""
+    """Return whether an environment variable is true."""
     value = os.environ.get(name, "")
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
@@ -347,16 +347,16 @@ def _cleanup_runtime_artifacts_sync(
     return stats
 
 
-# ==================== nodriver 自动安装 ====================
+# ==================== nodriver auto-install ====================
 def _run_pip_install(package: str, use_mirror: bool = False) -> bool:
-    """运行 pip install 命令
+    """Run the pip install command.
     
     Args:
-        package: 包名
-        use_mirror: 是否使用国内镜像
+        package: Package name
+        use_mirror: Whether to use a domestic mirror
     
     Returns:
-        是否安装成功
+        Whether the installation succeeded
     """
     cmd = [sys.executable, "-m", "pip", "install", package]
     if use_mirror:
@@ -381,10 +381,10 @@ def _run_pip_install(package: str, use_mirror: bool = False) -> bool:
 
 
 def _ensure_nodriver_installed() -> bool:
-    """确保 nodriver 已安装
+    """Ensure nodriver is installed.
     
     Returns:
-        是否安装成功/已安装
+        Whether the installation succeeded or it was already installed
     """
     try:
         import nodriver
@@ -397,11 +397,11 @@ def _ensure_nodriver_installed() -> bool:
     debug_logger.log_info("[BrowserCaptcha] nodriver 未安装，开始自动安装...")
     print("[BrowserCaptcha] nodriver 未安装，开始自动安装...")
     
-    # 先尝试官方源
+    # Try the official index first
     if _run_pip_install("nodriver", use_mirror=False):
         return True
     
-    # 官方源失败，尝试国内镜像
+    # Official index failed; try a domestic mirror
     debug_logger.log_info("[BrowserCaptcha] 官方源安装失败，尝试国内镜像...")
     print("[BrowserCaptcha] 官方源安装失败，尝试国内镜像...")
     if _run_pip_install("nodriver", use_mirror=True):
@@ -415,7 +415,7 @@ def _ensure_nodriver_installed() -> bool:
 
 
 def _read_windows_app_path(executable_name: str) -> Optional[str]:
-    """读取 Windows App Paths 中注册的浏览器路径。"""
+    """Read browser paths registered under Windows App Paths."""
     if os.name != "nt":
         return None
 
@@ -443,7 +443,7 @@ def _read_windows_app_path(executable_name: str) -> Optional[str]:
 
 
 def _detect_real_browser_executable_path() -> Optional[str]:
-    """尽量探测本机已安装的真实 Chromium 浏览器，避免交给 nodriver 自行弹选择。"""
+    """Best-effort detection of a real Chromium browser installed on this host, so nodriver does not pop up its own picker."""
     if os.name != "nt":
         linux_browser_candidates = [
             (
@@ -623,7 +623,7 @@ def _detect_real_browser_executable_path() -> Optional[str]:
 
 
 def _resolve_browser_executable_path() -> tuple[Optional[str], str]:
-    """解析浏览器优先级：环境变量 > auto。"""
+    """Resolve browser priority: environment variable > auto."""
     browser_executable_path = (
         os.environ.get("BROWSER_EXECUTABLE_PATH", "").strip() or None
     )
@@ -657,13 +657,13 @@ def _build_personal_browser_args(
     proxy_server_arg: Optional[str] = None,
     proxy_extension_dir: Optional[str] = None,
 ) -> list[str]:
-    """构建 personal 模式浏览器启动参数。
+    """Build the browser launch arguments for personal mode.
 
-    说明：
-    - 始终依赖独立临时 user-data-dir，避免污染系统真实资料。
-    - 显式去掉 `--profile-directory=Default` 这种容易误导的配置。
-    - 显式加 `--no-startup-window`，避免 Chrome 先弹一个默认普通窗口。
-    - 不使用无痕/BWSI 会话；独立临时 profile 已保证账号隔离。
+    Notes:
+    - Always rely on a dedicated temporary user-data-dir to avoid polluting the real system profile.
+    - Explicitly drop misleading settings such as `--profile-directory=Default`.
+    - Explicitly add `--no-startup-window` so Chrome does not open a default window first.
+    - Do not use incognito/BWSI sessions; the dedicated temporary profile already guarantees account isolation.
     """
     if _personal_bare_mode_enabled():
         browser_args = []
@@ -708,7 +708,7 @@ def _build_personal_browser_args(
         browser_args.append(proxy_server_arg)
 
     if proxy_extension_dir:
-        # 代理认证扩展在 bwsi/incognito 风格会话下容易失效，保持临时 profile 即可满足隔离需求。
+        # Proxy auth extensions tend to break under bwsi/incognito-style sessions; a temporary profile is enough for isolation.
         browser_args.append(f"--load-extension={proxy_extension_dir}")
     else:
         # The isolated temporary profile already prevents cross-account leakage.
@@ -733,7 +733,7 @@ def _resolve_browser_launch_parallelism_limit() -> int:
 
 
 def _resolve_personal_browser_sandbox_enabled() -> bool:
-    """尽量沿用真实浏览器默认沙箱；仅在 root/显式禁用时关闭。"""
+    """Prefer the real browser's default sandbox; disable it only for root or when explicitly requested."""
     if _env_truthy("PERSONAL_BROWSER_DISABLE_SANDBOX"):
         return False
     if _env_truthy("PERSONAL_BROWSER_FORCE_SANDBOX"):
@@ -810,7 +810,7 @@ def _tune_personal_browser_args_for_docker_headed(
     return tuned_args
 
 
-# 尝试导入 nodriver
+# Try to import nodriver
 uc = None
 NODRIVER_AVAILABLE = False
 _NODRIVER_RUNTIME_PATCHED = False
@@ -879,7 +879,7 @@ _NORMAL_CLOSE_KEYWORDS = (
 
 
 def _flatten_exception_text(error: Any) -> str:
-    """拼接异常链文本，便于统一识别 nodriver 运行态断连。"""
+    """Concatenate the exception chain text so runtime disconnect detection stays consistent."""
     visited: set[int] = set()
     pending = [error]
     parts: list[str] = []
@@ -914,7 +914,7 @@ def _flatten_exception_text(error: Any) -> str:
 
 
 def _is_runtime_disconnect_error(error: Any) -> bool:
-    """识别浏览器 / websocket 运行态断连。"""
+    """Detect browser / websocket runtime disconnects."""
     error_text = _flatten_exception_text(error)
     if not error_text:
         return False
@@ -924,7 +924,7 @@ def _is_runtime_disconnect_error(error: Any) -> bool:
 
 
 def _is_runtime_normal_close_error(error: Any) -> bool:
-    """识别 websocket 正常关闭（1000）这类预期退场。"""
+    """Detect expected exits such as a normal websocket close (1000)."""
     error_text = _flatten_exception_text(error)
     if not error_text:
         return False
@@ -934,7 +934,7 @@ def _is_runtime_normal_close_error(error: Any) -> bool:
 def _finalize_nodriver_send_task(
     connection, transaction, tx_id: int, task: asyncio.Task
 ):
-    """回收 nodriver websocket.send 的后台异常，避免事件循环打印未检索 task 错误。"""
+    """Drain background exceptions from nodriver websocket.send to avoid unretrieved task errors in the event loop."""
     try:
         task.result()
     except asyncio.CancelledError:
@@ -964,7 +964,7 @@ def _finalize_nodriver_send_task(
 
 
 def _is_nodriver_connection_closed(connection_instance) -> bool:
-    """兼容不同 nodriver 版本的连接状态判断。"""
+    """Connection-state check compatible with different nodriver versions."""
     try:
         return bool(getattr(connection_instance, "closed"))
     except AttributeError:
@@ -983,7 +983,7 @@ def _is_nodriver_connection_closed(connection_instance) -> bool:
 
 
 def _patch_nodriver_connection_instance(connection_instance):
-    """在连接实例级别收口 websocket.send 的后台异常。"""
+    """Contain background exceptions from websocket.send at the connection instance level."""
     if not connection_instance or getattr(
         connection_instance, "_flow2api_send_patched", False
     ):
@@ -1073,7 +1073,7 @@ def _patch_nodriver_connection_instance(connection_instance):
 
 
 def _patch_nodriver_browser_instance(browser_instance):
-    """在浏览器实例级别收口 update_targets，并补齐新 target 的连接补丁。"""
+    """Contain update_targets at the browser instance level and patch connections for newly discovered targets."""
     if not browser_instance:
         return
 
@@ -1128,7 +1128,7 @@ def _patch_nodriver_browser_instance(browser_instance):
 
 
 def _patch_nodriver_runtime(browser_instance=None):
-    """给 nodriver 当前浏览器实例补一层断连降噪与异常透传。"""
+    """Add a layer of disconnect noise suppression and exception pass-through to the current nodriver browser instance."""
     global _NODRIVER_RUNTIME_PATCHED
 
     if not NODRIVER_AVAILABLE or uc is None:
@@ -1539,7 +1539,7 @@ def _create_proxy_auth_extension(
 
 
 class ResidentTabInfo:
-    """常驻标签页信息结构"""
+    """Resident tab information."""
 
     def __init__(
         self,
@@ -1557,8 +1557,8 @@ class ResidentTabInfo:
         self.browser_context_id = browser_context_id
         self.recaptcha_ready = False
         self.created_at = time.time()
-        self.last_used_at = time.time()  # 最后使用时间
-        self.use_count = 0  # 使用次数
+        self.last_used_at = time.time()  # Last used time
+        self.use_count = 0  # Use count
         self.fingerprint: Optional[Dict[str, Any]] = None
         self.cookie_signature: Optional[str] = None
         self.session_cookies: Optional[Dict[str, str]] = None
@@ -1566,8 +1566,8 @@ class ResidentTabInfo:
         self.last_harvest_session_id: Optional[str] = None
         self.last_solve_used_native_harvest = False
         self.prefer_native_harvest = False
-        self.solve_lock = asyncio.Lock()  # 串行化同一标签页上的执行，降低并发冲突
-        self.pending_assignment_count = 0  # 选中但尚未真正进入 solve_lock 的请求数
+        self.solve_lock = asyncio.Lock()  # Serialize execution on the same tab to reduce concurrency conflicts
+        self.pending_assignment_count = 0  # Requests that picked this tab but have not entered solve_lock yet
 
 
 @dataclass
@@ -1585,7 +1585,7 @@ class TokenPoolLease:
 
 
 class TokenPoolTimeoutError(TimeoutError):
-    """严格 token 池模式下，请求在等待可用 token 时超时。"""
+    """Raised when a request times out waiting for an available token in strict token-pool mode."""
 
 
 class NativeGenerationOutcomeUnknownError(RuntimeError):
@@ -1595,11 +1595,11 @@ class NativeGenerationOutcomeUnknownError(RuntimeError):
 
 
 class BrowserCaptchaService:
-    """浏览器自动化获取 reCAPTCHA token（nodriver 有头模式）
+    """Obtain reCAPTCHA tokens via browser automation (nodriver headed mode).
     
-    支持两种模式：
-    1. 常驻模式 (Resident Mode): 维护全局共享常驻标签页池，谁抢到空闲页谁执行
-    2. 传统模式 (Legacy Mode): 每次请求创建新标签页 (fallback)
+    Supports two modes:
+    1. Resident Mode: maintains a globally shared pool of resident tabs; whichever caller grabs a free tab runs on it
+    2. Legacy Mode: creates a new tab per request (fallback)
     """
 
     _instance: Optional["BrowserCaptchaService"] = None
@@ -1630,7 +1630,7 @@ class BrowserCaptchaService:
         browser_instance_id: int = 0,
         max_resident_tabs_override: Optional[int] = None,
     ):
-        """初始化服务"""
+        """Initialize the service."""
         self.headless = bool(getattr(config, "personal_headless", False))
         self.browser = None
         self._initialized = False
@@ -1654,29 +1654,29 @@ class BrowserCaptchaService:
         self._runtime_surface_profile: Dict[str, Any] = {}
         self._refresh_runtime_fingerprint_spoof_seed()
 
-        # 常驻模式相关属性
+        # Resident-mode attributes
         self._resident_tabs: dict[
             str, "ResidentTabInfo"
-        ] = {}  # slot_id -> 常驻标签页信息
+        ] = {}  # slot_id -> resident tab info
         self._token_resident_affinity: dict[
             str, str
-        ] = {}  # token_id -> slot_id（优先保证 token 独占 context）
+        ] = {}  # token_id -> slot_id (prefer giving a token exclusive use of the context)
         self._project_resident_affinity: dict[
             str, str
-        ] = {}  # project_id -> slot_id（最近一次使用）
+        ] = {}  # project_id -> slot_id (most recent use)
         self._resident_slot_seq = 0
         self._resident_pick_index = 0
-        self._resident_lock = asyncio.Lock()  # 保护常驻标签页操作
+        self._resident_lock = asyncio.Lock()  # Guards resident tab operations
         self._browser_lock = (
             asyncio.Lock()
-        )  # 保护浏览器初始化/关闭/重启，避免重复拉起实例
+        )  # Guards browser init/close/restart to avoid launching duplicate instances
         self._runtime_recover_lock = (
             asyncio.Lock()
-        )  # 串行化浏览器级恢复，避免并发重启风暴
-        self._tab_build_lock = asyncio.Lock()  # 串行化冷启动/重建，降低 nodriver 抖动
+        )  # Serializes browser-level recovery to avoid concurrent restart storms
+        self._tab_build_lock = asyncio.Lock()  # Serializes cold starts/rebuilds to reduce nodriver flakiness
         self._legacy_lock = (
             asyncio.Lock()
-        )  # 避免 legacy fallback 并发失控创建临时标签页
+        )  # Prevents legacy fallback from creating temporary tabs out of control
         configured_total_tabs = getattr(config, "personal_max_resident_tabs", 5)
         self._max_resident_tabs = self._resolve_personal_max_resident_tabs(
             configured_total_tabs
@@ -1685,7 +1685,7 @@ class BrowserCaptchaService:
             60,
             int(getattr(config, "personal_idle_tab_ttl_seconds", 600) or 600),
         )
-        self._idle_reaper_task: Optional[asyncio.Task] = None  # 空闲回收任务
+        self._idle_reaper_task: Optional[asyncio.Task] = None  # Idle reaper task
         self._command_timeout_seconds = 8.0
         self._navigation_timeout_seconds = 20.0
         self._solve_timeout_seconds = 45.0
@@ -1708,11 +1708,11 @@ class BrowserCaptchaService:
         )
         self._last_fingerprint_at = 0.0
 
-        # 兼容旧 API（保留 single resident 属性作为别名）
-        self.resident_project_id: Optional[str] = None  # 向后兼容
-        self.resident_tab = None                         # 向后兼容
-        self._running = False                            # 向后兼容
-        self._recaptcha_ready = False                    # 向后兼容
+        # Compatibility with the old API (keep single resident attributes as aliases)
+        self.resident_project_id: Optional[str] = None  # Backward compatibility
+        self.resident_tab = None                         # Backward compatibility
+        self._running = False                            # Backward compatibility
+        self._recaptcha_ready = False                    # Backward compatibility
         self._last_fingerprint: Optional[Dict[str, Any]] = None
         self._solve_bundle_snapshots: Dict[str, Dict[str, Any]] = {}
         self._resident_error_streaks: dict[str, int] = {}
@@ -1741,7 +1741,7 @@ class BrowserCaptchaService:
         self._recaptcha_asset_bundle_signature: Optional[str] = None
         self._recaptcha_asset_bundle: Optional[Dict[str, Any]] = None
         self._recaptcha_asset_hook_source: Optional[str] = None
-        # 自定义站点打码常驻页（用于 score-test）
+        # Resident page for custom-site captcha solving (used by score-test)
         self._custom_tabs: dict[str, Dict[str, Any]] = {}
         self._custom_lock = asyncio.Lock()
         self._refresh_runtime_tunables()
@@ -1769,9 +1769,9 @@ class BrowserCaptchaService:
                 1, min(50, int(max_resident_tabs_override))
             )
 
-        # pool 调整分片配额时，worker 需要立即更新本地有效 resident 上限；
-        # 否则新创建的 worker 会沿用旧值，导致明明配置了多浏览器/多标签，
-        # 实际每个实例仍只跑 1 个 resident slot。
+        # When the pool adjusts shard quotas, the worker must immediately update its local effective resident limit;
+        # otherwise newly created workers keep the old value, so even with multiple browsers/tabs configured,
+        # each instance still runs only 1 resident slot.
         configured_total_tabs = getattr(config, "personal_max_resident_tabs", 5)
         self._max_resident_tabs = self._resolve_personal_max_resident_tabs(
             configured_total_tabs
@@ -1935,7 +1935,7 @@ class BrowserCaptchaService:
     def _resolve_personal_max_resident_tabs(
         self, configured_tabs: Optional[int] = None
     ) -> int:
-        """计算当前模式下的有效 resident tab 上限。"""
+        """Compute the effective resident tab limit for the current mode."""
         try:
             resolved_tabs = (
                 self._max_resident_tabs_override
@@ -1949,7 +1949,7 @@ class BrowserCaptchaService:
             return 5
 
     def _reset_local_recaptcha_asset_caches(self, *, purge_disk: bool = False) -> None:
-        """重置本地 reCAPTCHA 资源缓存，必要时删除磁盘缓存以强制刷新。"""
+        """Reset the local reCAPTCHA asset cache, deleting the on-disk cache when a forced refresh is needed."""
         self._recaptcha_asset_data_url_cache.clear()
         self._recaptcha_asset_bundle_signature = None
         self._recaptcha_asset_bundle = None
@@ -1988,7 +1988,7 @@ class BrowserCaptchaService:
 
     @classmethod
     async def get_instance(cls, db=None):
-        """获取单例实例"""
+        """Get the singleton instance."""
         close_single_instance = None
         close_pool_instance = None
         async with cls._lock:
@@ -2097,7 +2097,7 @@ class BrowserCaptchaService:
                 pass
 
     async def reload_config(self):
-        """热更新配置（从数据库重新加载）"""
+        """Hot-reload configuration (reload from the database)."""
         old_headless = self.headless
         old_max_tabs = self._max_resident_tabs
         old_idle_ttl = self._idle_tab_ttl_seconds
@@ -2147,7 +2147,7 @@ class BrowserCaptchaService:
             await self._trim_resident_tabs_to_limit()
 
     async def _trim_resident_tabs_to_limit(self) -> None:
-        """在配额缩小时立即裁掉多余的空闲 resident tab，避免内存长期不回落。"""
+        """Trim surplus idle resident tabs immediately when the quota shrinks so memory does not stay high."""
         while True:
             async with self._resident_lock:
                 overflow = len(self._resident_tabs) - max(
@@ -2180,7 +2180,7 @@ class BrowserCaptchaService:
             await self._close_resident_tab(lru_slot_id)
 
     async def _build_proxy_config_signature(self) -> str:
-        """基于当前数据库配置构建稳定签名，用于判断是否需要重启浏览器 runtime。"""
+        """Build a stable signature from the current database config to decide whether the browser runtime must restart."""
         if not self.db:
             return ""
 
@@ -2236,7 +2236,7 @@ class BrowserCaptchaService:
         )
 
     def _refresh_runtime_tunables(self):
-        """刷新运行时调优参数，缺省时使用保守的低开销默认值。"""
+        """Refresh runtime tuning parameters, falling back to conservative low-overhead defaults."""
         try:
             self._health_probe_ttl_seconds = max(
                 0.2,
@@ -2266,7 +2266,7 @@ class BrowserCaptchaService:
         )
 
     def _resolve_fresh_profile_restart_every_n_solves(self) -> int:
-        """解析浏览器 fresh profile 轮换阈值，0 表示禁用。"""
+        """Resolve the fresh-profile rotation threshold for the browser; 0 disables it."""
         raw_value: Any = None
         env_value = os.environ.get(
             "PERSONAL_BROWSER_FRESH_RESTART_EVERY_N_SOLVES", ""
@@ -2451,7 +2451,7 @@ class BrowserCaptchaService:
         *,
         source: str,
     ) -> bool:
-        """达到 fresh 轮换阈值后，阻止新取码继续复用旧 resident tab。"""
+        """Once the fresh rotation threshold is reached, prevent new solves from reusing the old resident tab."""
         waited = False
         current_task = asyncio.current_task()
 
@@ -2531,11 +2531,11 @@ class BrowserCaptchaService:
             await asyncio.sleep(0)
 
     def _requires_virtual_display(self) -> bool:
-        """仅在显式有头模式下要求 Docker/Linux 提供 DISPLAY/虚拟显示。"""
+        """Require DISPLAY/virtual display for Docker/Linux only in explicit headed mode."""
         return bool(IS_DOCKER and os.name == "posix" and not self.headless)
 
     def _check_available(self):
-        """检查服务是否可用"""
+        """Check whether the service is available."""
         if DOCKER_HEADED_BLOCKED:
             raise RuntimeError(
                 "检测到 Docker 环境，默认禁用内置浏览器打码。"
@@ -2552,7 +2552,7 @@ class BrowserCaptchaService:
             )
 
     async def _run_with_timeout(self, awaitable, timeout_seconds: float, label: str):
-        """统一收口 nodriver 操作超时，避免单次卡死拖住整条请求链路。"""
+        """Centralize nodriver operation timeouts so a single hang cannot stall the whole request chain."""
         effective_timeout = max(0.5, float(timeout_seconds or 0))
         try:
             return await asyncio.wait_for(awaitable, timeout=effective_timeout)
@@ -2562,7 +2562,7 @@ class BrowserCaptchaService:
     async def _wait_for_display_ready(
         self, display_value: str, timeout_seconds: float = 5.0
     ):
-        """Docker 有头模式下等待 X display socket 就绪，避免容器重启后立刻拉起浏览器失败。"""
+        """In Docker headed mode, wait for the X display socket to be ready so the browser does not fail right after a container restart."""
         if not (
             IS_DOCKER
             and display_value
@@ -2878,7 +2878,7 @@ class BrowserCaptchaService:
         return stats
 
     def _is_browser_runtime_error(self, error: Any) -> bool:
-        """识别浏览器运行态已损坏/已关闭的典型异常。"""
+        """Detect typical exceptions indicating the browser runtime is broken or closed."""
         return _is_runtime_disconnect_error(error) or self._is_no_browser_window_error(
             error
         )
@@ -2949,7 +2949,7 @@ class BrowserCaptchaService:
         return value
 
     async def _probe_browser_runtime(self) -> bool:
-        """轻量探测当前 nodriver 连接是否仍可用。"""
+        """Lightweight probe of whether the current nodriver connection is still usable."""
         if not self.browser:
             self._invalidate_browser_health()
             return False
@@ -2985,7 +2985,7 @@ class BrowserCaptchaService:
     async def _recover_browser_runtime(
         self, project_id: Optional[str] = None, reason: str = "runtime_error"
     ) -> bool:
-        """浏览器运行态损坏时，优先整颗浏览器重启并恢复 resident 池。"""
+        """When the browser runtime is broken, prefer restarting the whole browser and restoring the resident pool."""
         normalized_project_id = str(project_id or "").strip()
         async with self._runtime_recover_lock:
             if (
@@ -6271,7 +6271,7 @@ class BrowserCaptchaService:
         }
 
     async def _capture_visible_startup_page(self):
-        """记录浏览器启动后自带的首个 page target，避免后续先关空页再开业务页。"""
+        """Record the first page target shipped with the browser at launch, so later flows do not close the blank page before opening the business page."""
         browser = self.browser
         self._visible_startup_target_id = None
         if browser is None or getattr(browser, "stopped", False):
@@ -6375,7 +6375,7 @@ class BrowserCaptchaService:
         label: str,
         timeout_seconds: Optional[float] = None,
     ):
-        """确保当前浏览器存在至少一个可复用的 page target。"""
+        """Ensure the current browser has at least one reusable page target."""
         browser = self.browser
         if browser is None or getattr(browser, "stopped", False):
             raise RuntimeError("browser runtime unavailable")
@@ -6533,11 +6533,11 @@ class BrowserCaptchaService:
         label: str,
         timeout_seconds: Optional[float] = None,
     ):
-        """有头模式下复用唯一浏览器窗口。
+        """Reuse a single browser window in headed mode.
 
-        规则：
-        - 当前没有任何 page target 时，先新建一个窗口；
-        - 一旦已有窗口，后续统一只开新标签页，避免继续弹第二个浏览器窗口。
+        Rules:
+        - When there are no page targets at all, create a new window first;
+        - Once a window exists, only open new tabs afterwards so a second browser window is never popped up.
         """
         reusable_startup_tab = await self._take_visible_startup_page()
         if reusable_startup_tab is not None:
@@ -6577,7 +6577,7 @@ class BrowserCaptchaService:
         )
 
     async def _cleanup_startup_browser_pages(self):
-        """关闭浏览器启动时自动弹出的默认页面，避免有头模式出现额外普通窗口。"""
+        """Close the default page that the browser opens automatically at launch, avoiding an extra normal window in headed mode."""
         browser = self.browser
         if browser is None or getattr(browser, "stopped", False):
             return
@@ -6623,7 +6623,7 @@ class BrowserCaptchaService:
         label: str,
         create_timeout_seconds: Optional[float] = None,
     ) -> tuple[Any, Any]:
-        """通过 CDP 手动创建独立 browser context 与 target，绕过 nodriver.create_context 的 StopIteration 缺陷。"""
+        """Create a dedicated browser context and target manually over CDP to work around the StopIteration bug in nodriver.create_context."""
         browser = self.browser
         if browser is None or getattr(browser, "stopped", False):
             raise RuntimeError("browser runtime unavailable")
@@ -6636,8 +6636,8 @@ class BrowserCaptchaService:
             else target_url
         )
         if not self.headless:
-            # 有头模式下不再为内部打码页创建独立可见 browser context 窗口。
-            # 直接复用默认 context 的单一浏览器窗口，通过新标签页承载 resident/legacy 页面。
+            # In headed mode, no longer create a separate visible browser context window for internal captcha pages.
+            # Reuse the single browser window of the default context and host resident/legacy pages in new tabs.
             tab = await self._open_visible_browser_tab(
                 target_url,
                 label=f"{label}:headed_tab",
@@ -6794,10 +6794,10 @@ class BrowserCaptchaService:
         )
 
     async def _idle_tab_reaper_loop(self):
-        """空闲标签页回收循环"""
+        """Idle tab reclamation loop."""
         while True:
             try:
-                await asyncio.sleep(30)  # 每30秒检查一次
+                await asyncio.sleep(30)  # Check every 30 seconds
                 current_time = time.time()
                 tabs_to_close = []
 
@@ -6821,7 +6821,7 @@ class BrowserCaptchaService:
                 debug_logger.log_warning(f"[BrowserCaptcha] 空闲标签页回收异常: {e}")
 
     async def _evict_lru_tab_if_needed(self) -> bool:
-        """如果达到共享池上限，使用 LRU 策略淘汰最久未使用的空闲标签页。"""
+        """When the shared pool limit is reached, evict the least recently used idle tab via LRU."""
         async with self._resident_lock:
             if len(self._resident_tabs) < self._max_resident_tabs:
                 return True
@@ -6853,7 +6853,7 @@ class BrowserCaptchaService:
         return False
 
     async def _get_reserved_tab_ids(self) -> set[int]:
-        """收集当前被 resident/custom 池占用的标签页，legacy 模式不得复用。"""
+        """Collect the tabs currently occupied by the resident/custom pools; legacy mode must not reuse them."""
         reserved_tab_ids: set[int] = set()
 
         async with self._resident_lock:
@@ -6888,7 +6888,7 @@ class BrowserCaptchaService:
 
     @staticmethod
     def _extract_cookie_name_domain(cookie: Any) -> tuple[str, str]:
-        """兼容 nodriver cookie 对象与 dict 结构，提取 name/domain 用于日志。"""
+        """Support both nodriver cookie objects and dicts, extracting name/domain for logging."""
         if isinstance(cookie, dict):
             return (
                 str(cookie.get("name") or "").strip(),
@@ -6928,14 +6928,13 @@ class BrowserCaptchaService:
     def _build_personal_cookie_targets(
         cls, raw_cookie: Optional[str]
     ) -> list[Dict[str, Any]]:
-        """为 personal 内置浏览器构建 cookie 注入列表。
+        """Build the cookie injection list for the built-in personal browser.
 
-        说明：
-        - 原始 Cookie 头没有 domain 元数据时，直接扩展到 labs/google/recaptcha 三个目标。
-        - 即使 token.google_cookies 已经带有显式的 google.com 域，也额外镜像一份到
-          `www.recaptcha.net`，保证 enterprise reload 首轮请求也能命中 cookie。
-        - 对 Google/reCAPTCHA Cookie 强制使用 `SameSite=None`
-          场景下第三方 anchor/reload 请求继续丢 cookie。
+        Notes:
+        - When the raw Cookie header has no domain metadata, expand it directly to the three targets labs/google/recaptcha.
+        - Even when token.google_cookies already carries an explicit google.com domain, also mirror a copy to
+          `www.recaptcha.net` so the first enterprise reload request still hits the cookie.
+        - Force `SameSite=None` on Google/reCAPTCHA cookies, otherwise third-party anchor/reload requests keep losing the cookie.
         """
         browser_cookies = build_browser_cookie_targets(
             raw_cookie,
@@ -6996,7 +6995,7 @@ class BrowserCaptchaService:
     def _build_configured_browser_cookie_targets(
         cls, raw_cookie: Optional[str]
     ) -> list[Dict[str, Any]]:
-        """构建系统级浏览器启动 cookie，确保 Google / reCAPTCHA 首跳都能命中。"""
+        """Build system-level launch cookies for the browser so the first Google / reCAPTCHA hops always hit them."""
         browser_cookies = build_browser_cookie_targets(
             raw_cookie,
             fallback_urls=list(PERSONAL_GOOGLE_FAMILY_COOKIE_MIRROR_URLS),
@@ -7799,7 +7798,7 @@ class BrowserCaptchaService:
         )
 
     async def _open_labs_bootstrap_page(self, tab, *, label: str) -> bool:
-        """在 Cookie 绑定之后打开当前 Flow 页面。"""
+        """Open the current Flow page after cookies are bound."""
 
         async def _describe_surface(stage: str) -> tuple[str, str]:
             current_url = ""
@@ -7906,7 +7905,7 @@ class BrowserCaptchaService:
         *,
         label: str,
     ) -> bool:
-        """访问一次 Google 首页，让当前 browser context 自行拿到额外站点 cookie。"""
+        """Visit the Google homepage once so the current browser context obtains additional site cookies on its own."""
         if resident_info is None or not resident_info.tab:
             return False
 
@@ -8159,7 +8158,7 @@ class BrowserCaptchaService:
         *,
         available_only: bool = False,
     ) -> tuple[Optional[str], Optional[ResidentTabInfo]]:
-        """优先走 token 级映射，其次 project 级映射；没有映射时退化到共享池全局挑选。"""
+        """Prefer the token-level mapping, then the project-level mapping; fall back to global selection from the shared pool when neither exists."""
         slot_id = self._resolve_token_affinity_slot_locked(
             token_id,
             available_only=available_only,
@@ -8281,8 +8280,8 @@ class BrowserCaptchaService:
                 )
                 return token_candidates[pick_index]
 
-        # 共享打码池不再按 project_id 绑定；这里只根据“是否就绪 / 是否空闲 / 使用历史”
-        # 做全局选择，避免 4 token/4 project 时把请求硬绑定到固定 tab。
+        # The shared captcha pool is no longer bound by project_id; selection is global based only on "ready / idle / usage history"
+        # so requests are not hard-bound to a fixed tab when there are 4 tokens and 4 projects.
         ready_idle = [
             (slot_id, resident_info)
             for slot_id, resident_info in candidates
@@ -8338,12 +8337,12 @@ class BrowserCaptchaService:
         reserve_for_solve: bool = False,
         return_slot_key: bool = False,
     ):
-        """确保共享打码标签页池中有可用 tab。
+        """Ensure the shared captcha tab pool has an available tab.
 
-        逻辑：
-        - 优先复用空闲 tab
-        - 如果所有 tab 都忙且未到上限，继续扩容
-        - 到达上限后允许请求排队等待已有 tab
+        Logic:
+        - Prefer reusing an idle tab
+        - If all tabs are busy and the limit is not reached, scale up
+        - After reaching the limit, let requests queue for an existing tab
         """
 
         def wrap(slot_id: Optional[str], resident_info: Optional[ResidentTabInfo]):
@@ -8592,7 +8591,7 @@ class BrowserCaptchaService:
         reserve_for_solve: bool = False,
         return_slot_key: bool = False,
     ):
-        """重建共享池中的一个标签页。优先重建当前项目最近使用的 slot。"""
+        """Rebuild one tab in the shared pool. Prefer rebuilding the slot most recently used by the current project."""
 
         def wrap(
             actual_slot_id: Optional[str], resident_info: Optional[ResidentTabInfo]
@@ -8729,7 +8728,7 @@ class BrowserCaptchaService:
         project_id: str,
         error_reason: str,
     ):
-        """同一 slot 的上游异常恢复任务去重，避免并发重复清缓存/重建。"""
+        """Deduplicate upstream error recovery tasks for the same slot to avoid concurrent cache clears/rebuilds."""
         normalized_slot_id = str(slot_id or "").strip()
         if not normalized_slot_id:
             return await task_factory()
@@ -8762,7 +8761,7 @@ class BrowserCaptchaService:
                         self._resident_recovery_tasks.pop(normalized_slot_id, None)
 
     def _sync_compat_resident_state(self):
-        """同步旧版单 resident 兼容属性。"""
+        """Sync the legacy single-resident compatibility attributes."""
         first_resident = next(iter(self._resident_tabs.values()), None)
         if first_resident:
             self.resident_project_id = first_resident.project_id
@@ -8789,7 +8788,7 @@ class BrowserCaptchaService:
         await self._disconnect_connection_quietly(tab, reason="tab_close")
 
     async def _disconnect_connection_quietly(self, connection, *, reason: str):
-        """尽量关闭任意 nodriver 连接对象，回收 listener task 与未完成 transaction。"""
+        """Best-effort close of any nodriver connection object, reclaiming listener tasks and unfinished transactions."""
         disconnect_method = (
             getattr(connection, "disconnect", None) if connection else None
         )
@@ -8880,7 +8879,7 @@ class BrowserCaptchaService:
     async def _disconnect_browser_connection_quietly(
         self, browser_instance, reason: str
     ):
-        """尽量先关闭 DevTools websocket，减少 nodriver 后台任务在浏览器退场时炸栈。"""
+        """Prefer closing the DevTools websocket first to reduce nodriver background tasks blowing up when the browser exits."""
         if not browser_instance:
             return
 
@@ -9096,7 +9095,7 @@ class BrowserCaptchaService:
     async def _stop_browser_process(
         self, browser_instance, reason: str = "browser_stop"
     ):
-        """兼容 nodriver 同步 stop API，安全停止浏览器进程。"""
+        """Support the nodriver synchronous stop API and stop the browser process safely."""
         if not browser_instance:
             return
 
@@ -9205,7 +9204,7 @@ class BrowserCaptchaService:
                 )
 
     async def _shutdown_browser_runtime_locked(self, reason: str):
-        """在持有 _browser_lock 的前提下，彻底清理当前浏览器运行态。"""
+        """Completely clean up the current browser runtime while holding _browser_lock."""
         browser_instance = self.browser
         self.browser = None
         self._initialized = False
@@ -9385,7 +9384,7 @@ class BrowserCaptchaService:
     ) -> list[str]:
         """Build the candidate bootstrap URLs for the requested reCAPTCHA script."""
         normalized_path = script_path.lstrip("/")
-        # 默认优先 recaptcha.net；google.com 仅作为回退。
+        # Default to recaptcha.net; google.com is only a fallback.
         hosts = ["https://www.recaptcha.net", "https://www.google.com"]
         suffix = f"?render={website_key}" if website_key else ""
         return [f"{host}/{normalized_path}{suffix}" for host in hosts]
@@ -9949,7 +9948,7 @@ class BrowserCaptchaService:
         *,
         force_remote: bool = False,
     ) -> str:
-        """直接注入远程 reCAPTCHA bootstrap 脚本。"""
+        """Inject the remote reCAPTCHA bootstrap script directly."""
         candidate_urls = self._get_recaptcha_bootstrap_candidate_urls(
             script_path,
             website_key=website_key,
@@ -10073,7 +10072,7 @@ class BrowserCaptchaService:
         return "remote"
 
     async def initialize(self):
-        """初始化 nodriver 浏览器"""
+        """Initialize the nodriver browser."""
         self._check_available()
 
         if (
@@ -10183,7 +10182,7 @@ class BrowserCaptchaService:
                             f"[BrowserCaptcha] 使用指定浏览器可执行文件: {browser_executable_path}"
                         )
 
-                    # 解析代理配置
+                    # Resolve proxy configuration
                     self._cleanup_proxy_extension()
                     self._proxy_url = None
                     (
@@ -10277,7 +10276,7 @@ class BrowserCaptchaService:
                         f"args={' '.join(effective_launch_args)}"
                     )
 
-                    # 启动 nodriver 浏览器（后台启动，不占用前台）
+                    # Launch the nodriver browser (in the background, without taking over the foreground)
                     launch_plan: list[tuple[str, Dict[str, Any], Optional[str]]] = [
                         ("nodriver.start", dict(launch_kwargs), None),
                     ]
@@ -10306,8 +10305,8 @@ class BrowserCaptchaService:
                             self._browser_process_pid = self._get_browser_process_pid(
                                 self.browser
                             )
-                            # uc.start() 成功后 CDP 连接已就绪（start() 内部已执行 update_targets 和 websocket 握手）
-                            # 短暂等待确保事件循环有机会处理已注册的回调
+                            # After uc.start() succeeds the CDP connection is ready (start() already ran update_targets and the websocket handshake)
+                            # Brief wait to give the event loop a chance to process registered callbacks
                             await asyncio.sleep(0.1)
                             break
                         except Exception as start_error:
@@ -10464,10 +10463,10 @@ class BrowserCaptchaService:
                     )
                     raise
 
-    # ========== 常驻模式 API ==========
+    # ========== Resident mode API ==========
 
     async def start_resident_mode(self, project_id: str):
-        """启动常驻模式（初始化浏览器，get_token 会自动创建标签页）"""
+        """Start resident mode (initializes the browser; get_token creates tabs automatically)."""
         if not str(project_id or "").strip():
             debug_logger.log_warning(
                 "[BrowserCaptcha] 启动常驻模式失败：project_id 为空"
@@ -10478,10 +10477,10 @@ class BrowserCaptchaService:
         debug_logger.log_info(f"[BrowserCaptcha] 浏览器已就绪 (project: {project_id})")
 
     async def stop_resident_mode(self, project_id: Optional[str] = None):
-        """停止常驻模式
+        """Stop resident mode.
         
         Args:
-            project_id: 指定 project_id 或 slot_id；如果为 None 则关闭所有常驻标签页
+            project_id: A project_id or slot_id; when None, close all resident tabs
         """
         target_slot_id = None
         if project_id:
@@ -10525,7 +10524,7 @@ class BrowserCaptchaService:
     async def _wait_for_document_ready(
         self, tab, retries: int = 30, interval_seconds: float = 1.0
     ) -> bool:
-        """等待页面文档加载完成。"""
+        """Wait for the page document to finish loading."""
         for _ in range(retries):
             try:
                 ready_state = await self._tab_evaluate(
@@ -10616,7 +10615,7 @@ class BrowserCaptchaService:
         )
 
     def _is_force_fresh_browser_restart_error(self, error_text: str) -> bool:
-        """命中特定 Flow 风控错误时，直接重启为全新无状态浏览器。"""
+        """When a specific Flow risk-control error is hit, restart into a brand-new stateless browser."""
         error_lower = (error_text or "").lower()
         if "recaptcha evaluation failed" not in error_lower:
             return False
@@ -10631,7 +10630,7 @@ class BrowserCaptchaService:
         )
 
     async def _clear_tab_site_storage(self, tab) -> Dict[str, Any]:
-        """清理当前站点的本地存储状态，但保留 cookies 登录态。"""
+        """Clear the current site's local storage state while keeping cookies for the login state."""
         result = await self._tab_evaluate(
             tab,
             """
@@ -10732,7 +10731,7 @@ class BrowserCaptchaService:
         clear_browser_cache: bool = False,
         refresh_local_assets: bool = False,
     ) -> bool:
-        """清理常驻标签页的站点数据并刷新，尝试原地自愈。"""
+        """Clear site data for the resident tab and refresh, attempting in-place self-healing."""
         async with self._resident_lock:
             resolved_slot_id = str(slot_id or "").strip()
             if resolved_slot_id:
@@ -10810,7 +10809,7 @@ class BrowserCaptchaService:
         token_id: Optional[int] = None,
         slot_id: Optional[str] = None,
     ) -> bool:
-        """关闭并重建常驻标签页。"""
+        """Close and rebuild the resident tab."""
         resolved_slot_id, resident_info = await self._rebuild_resident_tab(
             project_id,
             token_id=token_id,
@@ -10890,7 +10889,7 @@ class BrowserCaptchaService:
         *,
         fresh_profile: bool = False,
     ) -> bool:
-        """重启整个 nodriver 浏览器，仅恢复当前请求所需标签页。"""
+        """Restart the entire nodriver browser and restore only the tabs required by the current request."""
         restart_reason = f"restart_project:{project_id}"
         if fresh_profile:
             debug_logger.log_warning(
@@ -10945,7 +10944,7 @@ class BrowserCaptchaService:
         slot_id: Optional[str] = None,
         issued_at: Optional[float] = None,
     ):
-        """上游生成接口异常时，对常驻标签页执行自愈恢复。"""
+        """When the upstream generation API fails, perform self-healing recovery on the resident tab."""
         if not project_id:
             return
 
@@ -11031,7 +11030,7 @@ class BrowserCaptchaService:
                 )
                 return
 
-            # 403 / reCAPTCHA / unusual activity：浏览器级缓存清理 + 本地静态缓存刷新 + resident 恢复
+            # 403 / reCAPTCHA / unusual activity: browser-level cache cleanup + local static cache refresh + resident recovery
             if self._is_recaptcha_cache_reset_error(error_text):
                 restart_threshold = max(
                     2,
@@ -11074,7 +11073,7 @@ class BrowserCaptchaService:
                     )
                 return
 
-            # 服务端错误：根据连续失败次数决定恢复策略
+            # Server error: choose the recovery strategy based on the consecutive failure count
             if self._is_server_side_flow_error(error_text):
                 recreate_threshold = max(
                     2,
@@ -11111,7 +11110,7 @@ class BrowserCaptchaService:
                     )
                 return
 
-            # 其他错误：直接重建标签页
+            # Other errors: rebuild the tab directly
             await self._recreate_resident_tab(
                 project_id,
                 token_id=token_id,
@@ -11126,7 +11125,7 @@ class BrowserCaptchaService:
         )
 
     async def _wait_for_recaptcha(self, tab) -> bool:
-        """等待 reCAPTCHA 加载
+        """Wait for reCAPTCHA to load.
 
         Returns:
             True if reCAPTCHA loaded successfully
@@ -11253,7 +11252,7 @@ class BrowserCaptchaService:
         website_key: str,
         enterprise: bool = False,
     ) -> bool:
-        """等待任意站点的 reCAPTCHA 加载，用于分数测试。"""
+        """Wait for reCAPTCHA to load on any site, used for score testing."""
         debug_logger.log_info("[BrowserCaptcha] 检测自定义 reCAPTCHA...")
 
         ready_check = (
@@ -12239,7 +12238,7 @@ class BrowserCaptchaService:
         action: str = "homepage",
         enterprise: bool = False,
     ) -> Optional[str]:
-        """在指定标签页执行任意站点的 reCAPTCHA。"""
+        """Run a reCAPTCHA for any site on the given tab."""
         ts = int(time.time() * 1000)
         token_var = f"_custom_recaptcha_token_{ts}"
         error_var = f"_custom_recaptcha_error_{ts}"
@@ -12327,7 +12326,7 @@ class BrowserCaptchaService:
     async def _verify_score_on_tab(
         self, tab, token: str, verify_url: str
     ) -> Dict[str, Any]:
-        """直接读取测试页面展示的分数，避免 verify.php 与页面显示口径不一致。"""
+        """Read the score displayed by the test page directly, avoiding discrepancies between verify.php and the page display."""
         _ = token
         _ = verify_url
         started_at = time.time()
@@ -12461,7 +12460,7 @@ class BrowserCaptchaService:
         }
 
     async def _extract_tab_fingerprint(self, tab) -> Optional[Dict[str, Any]]:
-        """从 nodriver 标签页提取浏览器指纹信息。"""
+        """Extract browser fingerprint information from a nodriver tab."""
         try:
             fingerprint = await self._tab_evaluate(
                 tab,
@@ -12601,7 +12600,7 @@ class BrowserCaptchaService:
             return None
 
     async def _refresh_last_fingerprint(self, tab) -> Optional[Dict[str, Any]]:
-        """缓存最近一次浏览器指纹，避免每次打码成功后都追加一轮 JS 执行。"""
+        """Cache the most recent browser fingerprint to avoid an extra JS round-trip after every successful solve."""
         if self._is_fingerprint_cache_fresh():
             return self._last_fingerprint
 
@@ -12705,7 +12704,7 @@ class BrowserCaptchaService:
         return dict(bundle) if isinstance(bundle, dict) else None
 
     async def _cache_session_cookies_for_computed(self, resident_info):
-        """提取 Google session cookies 供 reload 链路复用。"""
+        """Extract Google session cookies for reuse by the reload path."""
         if not resident_info or not resident_info.tab:
             return None
         from nodriver import cdp
@@ -12924,7 +12923,7 @@ class BrowserCaptchaService:
         consume_reservation: bool = False,
         success_label: str,
     ) -> Optional[str]:
-        """在共享常驻标签页上执行一次打码，并统一更新成功态。"""
+        """Run one captcha solve on a shared resident tab and update the success state consistently."""
         if not resident_info or not resident_info.tab:
             if consume_reservation:
                 await self._release_resident_slot_reservation(
@@ -13016,7 +13015,7 @@ class BrowserCaptchaService:
         )
         return token
 
-    # ========== 主要 API ==========
+    # ========== Main API ==========
 
     async def _get_token_direct(
         self,
@@ -13028,16 +13027,16 @@ class BrowserCaptchaService:
         allow_affinity: bool = True,
         remember_affinity: bool = True,
     ) -> Optional[str] | tuple[Optional[str], Optional[str]]:
-        """获取 reCAPTCHA token
+        """Get a reCAPTCHA token.
 
-        使用全局共享打码标签页池。标签页不再按 project_id 一对一绑定，
-        谁拿到空闲 tab 就用谁的；只有 Session Token 刷新/故障恢复会优先参考最近一次映射。
+        Uses the global shared captcha tab pool. Tabs are no longer bound one-to-one to project_id;
+        whoever gets an idle tab uses it; only Session Token refresh/failure recovery prefers the most recent mapping.
 
         Args:
-            project_id: Flow项目ID
-            action: reCAPTCHA action类型
-                - IMAGE_GENERATION: 图片生成和2K/4K图片放大 (默认)
-                - VIDEO_GENERATION: 视频生成和视频放大
+            project_id: Flow project ID
+            action: reCAPTCHA action type
+                - IMAGE_GENERATION: image generation and 2K/4K image upscaling (default)
+                - VIDEO_GENERATION: video generation and video upscaling
 
         Returns:
             reCAPTCHA token and its native Flow session id.
@@ -13064,7 +13063,7 @@ class BrowserCaptchaService:
             source="get_token_pre_initialize",
         )
 
-        # 确保浏览器已初始化
+        # Ensure the browser is initialized
         await self.initialize()
 
         await self._wait_for_pending_fresh_profile_restart_before_solve(
@@ -13436,7 +13435,7 @@ class BrowserCaptchaService:
         *,
         return_slot_id: bool = False,
     ) -> Optional[str] | tuple[Optional[str], Optional[str]]:
-        """对外暴露统一取 token 接口，保持单实例与池化 worker 行为一致。"""
+        """Expose a unified token-fetch API so single-instance and pooled-worker behavior stay consistent."""
         return await self._get_token_direct(
             project_id,
             action=action,
@@ -13528,14 +13527,14 @@ class BrowserCaptchaService:
         project_id: Optional[str] = None,
         token_id: Optional[int] = None,
     ) -> Optional[ResidentTabInfo]:
-        """创建一个共享常驻打码标签页
+        """Create a shared resident captcha tab.
 
         Args:
-            slot_id: 共享标签页槽位 ID
-            project_id: 触发创建的项目 ID，仅用于日志和最近映射
+            slot_id: Shared tab slot ID
+            project_id: Project ID that triggered creation, used only for logging and the latest mapping
 
         Returns:
-            ResidentTabInfo 对象，或 None（创建失败）
+            A ResidentTabInfo object, or None if creation failed
         """
         tab = None
         browser_context_id = None
@@ -13544,7 +13543,7 @@ class BrowserCaptchaService:
                 f"[BrowserCaptcha] 创建共享常驻标签页 slot={slot_id}, seed_project={project_id}, token_id={token_id}"
             )
 
-            # 获取或创建标签页
+            # Get or create the tab
             browser = self.browser
             if browser is None or getattr(browser, "stopped", False):
                 debug_logger.log_warning(
@@ -13561,9 +13560,9 @@ class BrowserCaptchaService:
             if browser_context_id is None and self.headless:
                 browser_context_id = self._extract_tab_browser_context_id(tab)
 
-            # 等待页面加载完成（减少等待时间）
+            # Wait for the page to finish loading (with a reduced wait time)
             page_loaded = False
-            for retry in range(10):  # 减少到10次，最多5秒
+            for retry in range(10):  # Reduced to 10 attempts, at most 5 seconds
                 try:
                     await asyncio.sleep(0.5)
                     ready_state = await self._tab_evaluate(
@@ -13586,7 +13585,7 @@ class BrowserCaptchaService:
                     debug_logger.log_warning(
                         f"[BrowserCaptcha] 等待页面异常: {e}，重试 {retry + 1}/10..."
                     )
-                    await asyncio.sleep(0.3)  # 减少重试间隔
+                    await asyncio.sleep(0.3)  # Reduce the retry interval
 
             if not page_loaded:
                 debug_logger.log_error(
@@ -13631,7 +13630,7 @@ class BrowserCaptchaService:
                     f"(slot={slot_id}, project={project_id}, token_id={token_id})"
                 )
 
-            # 等待 reCAPTCHA 加载
+            # Wait for reCAPTCHA to load
             debug_logger.log_info(
                 f"[BrowserCaptcha] 引导页跳过 reCAPTCHA 预热，等待真实项目页按需初始化 "
                 f"(slot={slot_id}, project={project_id}, token_id={token_id})"
@@ -13673,10 +13672,10 @@ class BrowserCaptchaService:
             return None
 
     async def _close_resident_tab(self, slot_id: str):
-        """关闭指定 slot 的共享常驻标签页
+        """Close the shared resident tab for the given slot.
 
         Args:
-            slot_id: 共享标签页槽位 ID
+            slot_id: Shared tab slot ID
         """
         async with self._resident_lock:
             resident_info = self._resident_tabs.pop(slot_id, None)
@@ -13701,16 +13700,16 @@ class BrowserCaptchaService:
                 debug_logger.log_warning(f"[BrowserCaptcha] 关闭标签页时异常: {e}")
 
     async def invalidate_token(self, project_id: str):
-        """当检测到 token 无效时调用，重建当前项目最近映射的共享标签页。
+        """Called when a token is found to be invalid; rebuild the shared tab most recently mapped to the current project.
 
         Args:
-            project_id: 项目 ID
+            project_id: Project ID
         """
         debug_logger.log_warning(
             f"[BrowserCaptcha] Token 被标记为无效 (project: {project_id})，仅重建共享池中的对应标签页，避免清空全局浏览器状态"
         )
 
-        # 重建标签页
+        # Rebuild the tab
         slot_id, resident_info = await self._rebuild_resident_tab(
             project_id, return_slot_key=True
         )
@@ -13730,14 +13729,14 @@ class BrowserCaptchaService:
         *,
         token_id: Optional[int] = None,
     ) -> tuple[Optional[str], Optional[str]]:
-        """传统模式获取 reCAPTCHA token（每次创建新标签页）
+        """Get a reCAPTCHA token in legacy mode (creates a new tab per request).
 
         Args:
-            project_id: Flow项目ID
-            action: reCAPTCHA action类型 (IMAGE_GENERATION 或 VIDEO_GENERATION)
+            project_id: Flow project ID
+            action: reCAPTCHA action type (IMAGE_GENERATION or VIDEO_GENERATION)
 
         Returns:
-            reCAPTCHA token字符串，如果获取失败返回None
+            The reCAPTCHA token string, or None if it could not be obtained
         """
         max_attempts = 2
         async with self._legacy_lock:
@@ -13795,7 +13794,7 @@ class BrowserCaptchaService:
                             f"(project={project_id}, token_id={token_id})"
                         )
 
-                    # 等待 reCAPTCHA 加载
+                    # Wait for reCAPTCHA to load
                     recaptcha_ready = await self._wait_for_recaptcha(tab)
 
                     if not recaptcha_ready:
@@ -13921,7 +13920,7 @@ class BrowserCaptchaService:
                     )
                     return None, None
                 finally:
-                    # 关闭 legacy 临时标签页（但保留浏览器）
+                    # Close the legacy temporary tab (but keep the browser)
                     if tab:
                         await self._dispose_browser_context_quietly(browser_context_id)
                         await self._close_tab_quietly(tab)
@@ -13929,32 +13928,32 @@ class BrowserCaptchaService:
         return None, None
 
     def get_last_fingerprint(self) -> Optional[Dict[str, Any]]:
-        """返回最近一次打码时的浏览器指纹快照。"""
+        """Return the browser fingerprint snapshot from the most recent solve."""
         if not self._last_fingerprint:
             return None
         return dict(self._last_fingerprint)
 
     async def get_current_user_agent(self) -> Optional[str]:
-        """获取当前浏览器实例的真实 User-Agent。
+        """Get the real User-Agent of the current browser instance.
 
-        按优先级依次尝试：
-        1) 最近一次打码指纹中的 user_agent
-        2) 初始化时构建的 runtime_surface_profile 中的 userAgent
-        3) 通过 CDP 从运行态浏览器实时获取
+        Tries in priority order:
+        1) user_agent from the most recent solve fingerprint
+        2) userAgent from the runtime_surface_profile built at initialization
+        3) Live fetch from the running browser over CDP
         """
-        # 1) 从已缓存的浏览器指纹获取
+        # 1) From the cached browser fingerprint
         fingerprint = self.get_last_fingerprint()
         if isinstance(fingerprint, dict) and fingerprint.get("user_agent"):
             return fingerprint["user_agent"]
 
-        # 2) 从初始化时已构建的 runtime_surface_profile 获取（无需 CDP 调用）
+        # 2) From the runtime_surface_profile built at initialization (no CDP call needed)
         runtime_profile = self._get_runtime_surface_profile()
         if isinstance(runtime_profile, dict):
             user_agent = runtime_profile.get("userAgent")
             if user_agent:
                 return user_agent
 
-        # 3) 通过 CDP 直接从运行态浏览器获取
+        # 3) Directly from the running browser over CDP
         live_ua, _ = await self._get_live_browser_runtime_identity()
         if live_ua:
             return live_ua
@@ -13962,7 +13961,7 @@ class BrowserCaptchaService:
         return None
 
     async def _clear_browser_cache(self):
-        """清理浏览器全部缓存"""
+        """Clear all browser caches."""
         if not self.browser:
             return
 
@@ -13971,20 +13970,20 @@ class BrowserCaptchaService:
 
             debug_logger.log_info("[BrowserCaptcha] 开始清理浏览器缓存...")
 
-            # 使用 Chrome DevTools Protocol 清理缓存
-            # 清理所有类型的缓存数据
+            # Clear caches using the Chrome DevTools Protocol
+            # Clear all cache types
             await self._browser_send_command(
                 cdp.network.clear_browser_cache(),
                 label="clear_browser_cache",
             )
 
-            # 清理 Cookies
+            # Clear cookies
             await self._browser_send_command(
                 cdp.network.clear_browser_cookies(),
                 label="clear_browser_cookies",
             )
 
-            # 清理关键站点存储数据（localStorage, sessionStorage, IndexedDB, SW 等）
+            # Clear key site storage data (localStorage, sessionStorage, IndexedDB, SW, etc.)
             origins = (
                 "https://www.google.com",
                 "https://www.recaptcha.net",
@@ -14035,13 +14034,13 @@ class BrowserCaptchaService:
                 )
 
     async def close(self):
-        """关闭浏览器"""
+        """Close the browser."""
         await self._shutdown_browser_runtime(
             cancel_idle_reaper=True, reason="service_close"
         )
 
     async def open_login_window(self):
-        """打开登录窗口供用户手动登录 Google"""
+        """Open a login window for the user to sign in to Google manually."""
         await self.initialize()
         self._mark_runtime_active()
         tab = await self._open_visible_browser_tab(
@@ -14128,10 +14127,10 @@ class BrowserCaptchaService:
         project_ids: Optional[list[str]] = None,
         limit: int = 1,
     ) -> list[Optional[str]]:
-        """启动时预热共享常驻标签页。
+        """Pre-warm shared resident tabs at startup.
 
-        对每个 project_id 调用 _ensure_resident_tab 创建标签页，
-        达到 limit 数量后停止。返回已预热的 slot_id 列表。
+        Calls _ensure_resident_tab for each project_id to create tabs,
+        stopping once the limit is reached. Returns the list of pre-warmed slot_ids.
         """
         if not project_ids:
             return []
@@ -14153,22 +14152,22 @@ class BrowserCaptchaService:
                 )
         return warmed
 
-    # ========== 状态查询 ==========
+    # ========== Status queries ==========
 
     def is_resident_mode_active(self) -> bool:
-        """检查是否有任何常驻标签页激活"""
+        """Check whether any resident tab is active."""
         return len(self._resident_tabs) > 0 or self._running
 
     def get_resident_count(self) -> int:
-        """获取当前常驻标签页数量"""
+        """Get the current number of resident tabs."""
         return len(self._resident_tabs)
 
     def get_resident_project_ids(self) -> list[str]:
-        """获取所有当前共享常驻标签页的 slot_id 列表。"""
+        """Get the slot_id list of all current shared resident tabs."""
         return list(self._resident_tabs.keys())
 
     def get_resident_project_id(self) -> Optional[str]:
-        """获取当前共享池中的第一个 slot_id（向后兼容）。"""
+        """Get the first slot_id in the current shared pool (backward compatible)."""
         if self._resident_tabs:
             return next(iter(self._resident_tabs.keys()))
         return self.resident_project_id
@@ -14200,9 +14199,9 @@ class BrowserCaptchaService:
         action: str = "homepage",
         enterprise: bool = False,
     ) -> Optional[str]:
-        """为任意站点执行 reCAPTCHA，用于分数测试等场景。
+        """Run a reCAPTCHA for an arbitrary site, used for score testing and similar scenarios.
 
-        与普通 legacy 模式不同，这里会复用同一个常驻标签页，避免每次冷启动新 tab。
+        Unlike normal legacy mode, this reuses the same resident tab so no new tab is cold-started every time.
         """
         await self.initialize()
         self._mark_runtime_active()
@@ -14401,7 +14400,7 @@ class BrowserCaptchaService:
         action: str = "homepage",
         enterprise: bool = False,
     ) -> Dict[str, Any]:
-        """在同一个常驻标签页里获取 token 并直接校验页面分数。"""
+        """Obtain a token in the same resident tab and validate the page score directly."""
         self._mark_runtime_active()
         token_started_at = time.time()
         token = await self.get_custom_token(
@@ -14438,7 +14437,7 @@ class BrowserCaptchaService:
 
 
 class _PersonalBrowserPoolService:
-    """多浏览器实例调度层。保留现有单浏览器 worker 逻辑，只负责分发与扩缩容。"""
+    """Multi-browser instance scheduling layer. Keeps the existing single-browser worker logic and only handles dispatch and scaling."""
 
     def __init__(self, db=None):
         self.db = db
@@ -16570,19 +16569,19 @@ class _PersonalBrowserPoolService:
         return None
 
     async def get_current_user_agent(self) -> Optional[str]:
-        """获取当前浏览器实例的真实 User-Agent。
+        """Get the real User-Agent of the current browser instance.
 
-        按优先级依次从 worker 中尝试：
-        1) 最近一次打码指纹中的 user_agent
-        2) 初始化时构建的 runtime_surface_profile 中的 userAgent
-        3) 通过 CDP 从运行态浏览器实时获取
+        Tries the workers in priority order:
+        1) user_agent from the most recent solve fingerprint
+        2) userAgent from the runtime_surface_profile built at initialization
+        3) Live fetch from the running browser over CDP
         """
-        # 1) 从已缓存的浏览器指纹获取
+        # 1) From the cached browser fingerprint
         fingerprint = self.get_last_fingerprint()
         if isinstance(fingerprint, dict) and fingerprint.get("user_agent"):
             return fingerprint["user_agent"]
 
-        # 2) 从已初始化的 worker 的 runtime_surface_profile 获取
+        # 2) From the runtime_surface_profile of an already initialized worker
         for worker in self._workers:
             runtime_profile = worker._get_runtime_surface_profile()
             if isinstance(runtime_profile, dict):
@@ -16590,7 +16589,7 @@ class _PersonalBrowserPoolService:
                 if user_agent:
                     return user_agent
 
-        # 3) 通过 CDP 从有活跃浏览器的 worker 实时获取
+        # 3) Live from a worker with an active browser over CDP
         for worker in self._workers:
             if worker.browser:
                 live_ua, _ = await worker._get_live_browser_runtime_identity()

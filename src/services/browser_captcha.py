@@ -1,6 +1,6 @@
 """
-基于 RT 的本地 reCAPTCHA 打码服务 (终极闭环版 - 无 fake_useragent 纯净版)
-支持：自动刷新 Session Token、外部触发指纹切换、死磕重试
+Local RT-based reCAPTCHA solving service (final closed-loop version - clean, no fake_useragent)
+Supports: automatic Session Token refresh, externally triggered fingerprint switching, persistent retries
 """
 
 import os
@@ -8,7 +8,7 @@ import sys
 import subprocess
 import signal
 
-# 修复 Windows 上 playwright 的 asyncio 兼容性问题
+# Fix asyncio compatibility issues with playwright on Windows
 os.environ.setdefault("PLAYWRIGHT_BROWSERS_PATH", "0")
 
 import asyncio
@@ -36,13 +36,13 @@ from .recaptcha_runtime import TRUSTED_RECAPTCHA_HOOK_SOURCE, build_recaptcha_ex
 from .browser_cookie_utils import build_browser_cookie_targets, build_cookie_signature, is_partitioned_cookie
 
 
-# ==================== Docker 环境检测 ====================
+# ==================== Docker environment detection ====================
 def _is_running_in_docker() -> bool:
-    """检测是否在 Docker 容器中运行"""
-    # 方法1: 检查 /.dockerenv 文件
+    """Detect whether running inside a Docker container"""
+    # Method 1: check the /.dockerenv file
     if os.path.exists("/.dockerenv"):
         return True
-    # 方法2: 检查 cgroup
+    # Method 2: check cgroups
     try:
         with open("/proc/1/cgroup", "r") as f:
             content = f.read()
@@ -50,7 +50,7 @@ def _is_running_in_docker() -> bool:
                 return True
     except:
         pass
-    # 方法3: 检查环境变量
+    # Method 3: check environment variables
     if os.environ.get("DOCKER_CONTAINER") or os.environ.get("KUBERNETES_SERVICE_HOST"):
         return True
     return False
@@ -60,7 +60,7 @@ IS_DOCKER = _is_running_in_docker()
 
 
 def _is_truthy_env(name: str) -> bool:
-    """判断环境变量是否为 true。"""
+    """Determine whether an environment variable is true."""
     value = os.environ.get(name, "")
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
@@ -73,9 +73,9 @@ DOCKER_HEADED_BLOCKED = IS_DOCKER and not ALLOW_DOCKER_HEADED
 BROWSER_ENVIRONMENT_PATCH_MARKER = "__flow2apiBrowserEnvironmentPatchInstalled__"
 
 
-# ==================== playwright 自动安装 ====================
+# ==================== playwright auto-install ====================
 def _run_pip_install(package: str, use_mirror: bool = False) -> bool:
-    """运行 pip install 命令"""
+    """Run a pip install command"""
     cmd = [sys.executable, "-m", "pip", "install", package]
     if use_mirror:
         cmd.extend(["-i", "https://pypi.tuna.tsinghua.edu.cn/simple"])
@@ -104,12 +104,12 @@ def _run_pip_install(package: str, use_mirror: bool = False) -> bool:
 
 
 def _run_playwright_install(use_mirror: bool = False) -> bool:
-    """安装 playwright chromium 浏览器"""
+    """Install the playwright chromium browser"""
     cmd = [sys.executable, "-m", "playwright", "install", "chromium"]
     env = os.environ.copy()
     
     if use_mirror:
-        # 使用国内镜像
+        # Use a domestic mirror
         env["PLAYWRIGHT_DOWNLOAD_HOST"] = "https://npmmirror.com/mirrors/playwright"
     
     try:
@@ -141,7 +141,7 @@ def _run_playwright_install(use_mirror: bool = False) -> bool:
 
 
 def _ensure_playwright_installed() -> bool:
-    """确保 playwright 已安装"""
+    """Ensure playwright is installed"""
     try:
         import playwright
 
@@ -156,11 +156,11 @@ def _ensure_playwright_installed() -> bool:
     )
     print("[BrowserCaptcha] playwright 未安装，开始自动安装...")
     
-    # 先尝试官方源
+    # Try the official source first
     if _run_pip_install("playwright", use_mirror=False):
         return True
     
-    # 官方源失败，尝试国内镜像
+    # Official source failed; try a domestic mirror
     debug_logger.log_info("[BrowserCaptcha] 官方源安装失败，尝试国内镜像...")
     progress_runtime_prepare(
         "browser", "[BrowserCaptcha] 官方源安装失败，尝试国内镜像..."
@@ -183,7 +183,7 @@ def _ensure_playwright_installed() -> bool:
 
 
 def _ensure_browser_installed() -> bool:
-    """确保 chromium 浏览器已安装"""
+    """Ensure the chromium browser is installed"""
     try:
         detect_script = (
             "from playwright.sync_api import sync_playwright\n"
@@ -221,11 +221,11 @@ def _ensure_browser_installed() -> bool:
     )
     print("[BrowserCaptcha] chromium 浏览器未安装，开始自动安装...")
     
-    # 先尝试官方源
+    # Try the official source first
     if _run_playwright_install(use_mirror=False):
         return True
     
-    # 官方源失败，尝试国内镜像
+    # Official source failed; try a domestic mirror
     debug_logger.log_info("[BrowserCaptcha] 官方源安装失败，尝试国内镜像...")
     progress_runtime_prepare(
         "browser", "[BrowserCaptcha] 官方源安装失败，尝试国内镜像..."
@@ -247,7 +247,7 @@ def _ensure_browser_installed() -> bool:
     return False
 
 
-# 尝试导入 playwright
+# Try importing playwright
 async_playwright = None
 Route = None
 BrowserContext = None
@@ -273,14 +273,14 @@ else:
             from playwright.async_api import async_playwright, Route, BrowserContext
 
             PLAYWRIGHT_AVAILABLE = True
-            # 检查并安装浏览器
+            # Check and install the browser
             _ensure_browser_installed()
         except ImportError as e:
             debug_logger.log_error(f"[BrowserCaptcha] playwright 导入失败: {e}")
             print(f"[BrowserCaptcha] ❌ playwright 导入失败: {e}")
 
 
-# 配置
+# Configuration
 LABS_URL = "https://flow.google.com"
 BROWSER_SESSION_COOKIE_TARGET_URLS = (
     "https://flow.google.com/",
@@ -300,10 +300,10 @@ def _resolve_flow_page_warmup_seconds(value: Any) -> float:
 
 
 # ==========================================
-# 代理解析工具函数
+# Proxy parsing helpers
 # ==========================================
 def parse_proxy_url(proxy_url: str) -> Optional[Dict[str, str]]:
-    """解析代理URL（支持 socks5h://，Playwright 中按 socks5 处理）"""
+    """Parse a proxy URL (supports socks5h://, treated as socks5 in Playwright)"""
     if not proxy_url:
         return None
     if not re.match(r"^(http|https|socks5h?|socks5)://", proxy_url):
@@ -324,11 +324,11 @@ def parse_proxy_url(proxy_url: str) -> Optional[Dict[str, str]]:
 
 
 def normalize_browser_proxy_url(proxy_url: str) -> tuple[Optional[str], Optional[str]]:
-    """将浏览器代理标准化为 Playwright/Chromium 可接受的格式。
+    """Normalize browser proxies into a format accepted by Playwright/Chromium.
 
-    Chromium 不支持带账号密码的 socks5/socks5h 代理认证。
-    对于 `socks5(h)://user:pass@host:port`，自动降级为 `http://user:pass@host:port`，
-    方便兼容同时提供 HTTP/SOCKS5 双入口的代理服务商。
+    Chromium does not support socks5/socks5h proxy auth with username/password.
+    For `socks5(h)://user:pass@host:port`, automatically downgrade to `http://user:pass@host:port`
+    to stay compatible with proxy providers that expose both HTTP/SOCKS5 entrypoints.
 
     Returns:
         (normalized_proxy_url, warning_message)
@@ -373,7 +373,7 @@ def validate_browser_proxy_url(proxy_url: str) -> tuple[bool, str]:
 
 
 class TokenBrowser:
-    """共享浏览器槽位：复用 Chromium context，失败或空闲超时后回收。"""
+    """Shared browser slots: reuse Chromium contexts and recycle them after failures or idle timeouts."""
 
     # UA pool updated on 2026-03-01 from browsers that scored >= 0.3.
     UA_LIST = [
@@ -457,7 +457,7 @@ class TokenBrowser:
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.6834.210 Safari/537.36 OPR/117.0.0.0",
     ]
     
-    # 分辨率池
+    # Resolution pool
     RESOLUTIONS = [
         (1920, 1080),
         (2560, 1440),
@@ -523,7 +523,7 @@ class TokenBrowser:
         self._consecutive_browser_failures = 0
         self._solve_inflight = 0
         self._last_idle_since = time.monotonic()
-        # harvest 模式状态：页面原生 StreamChat 请求体与会话 id
+        # Harvest mode state: page-native StreamChat request body and session id
         self._harvest_streamchat_post: Optional[str] = None
         self._last_harvest_session_id: Optional[str] = None
         self._refresh_browser_profile()
@@ -1198,7 +1198,7 @@ class TokenBrowser:
 
     @classmethod
     def _build_google_cookie_targets(cls, cookie_storage: str) -> List[Dict[str, Any]]:
-        """按浏览器 Cookie 作用域展开登录态，兼容 JSON 与 Header 格式。"""
+        """Expand the login state by browser cookie scope, supporting both JSON and Header formats."""
         cookies = build_browser_cookie_targets(
             cookie_storage,
             default_url="https://flow.google.com/",
@@ -1258,8 +1258,8 @@ class TokenBrowser:
             str(getattr(token, "google_cookies", "") or "").strip() if token else ""
         )
 
-        # 优先以 google_cookies 计算绑定指纹：新版 flow.google.com 依赖
-        # Google 账号 cookies 维持登录态，st 仅作为旧数据的回退
+        # Prefer computing the binding fingerprint from google_cookies: the newer flow.google.com relies on
+        # Google account cookies to stay logged in; st is only a fallback for legacy data
         if google_cookies:
             cookie_signature = build_cookie_signature(
                 google_cookies
@@ -1356,12 +1356,12 @@ class TokenBrowser:
         *,
         context_label: str = "",
     ) -> bool:
-        """打开真实 Flow 页面并完成页面预热。
+        """Open the real Flow page and complete page warm-up.
 
-        页面级注册 route：捕获页面自身发出的 StreamChat 请求（harvest
-        打码数据源，见 _execute_captcha），其余请求一律直通，不干预页面
-        原生加载行为。route 挂在 page 上，页面关闭后自动清理，不影响
-        共享 context。
+        Register a page-level route: capture StreamChat requests sent by the page itself
+        (the harvest captcha data source, see _execute_captcha). All other requests pass
+        through untouched so the page's native loading is unaffected. Routes attach to the
+        page and are cleaned up when it closes, leaving the shared context untouched.
         """
         primary_host = (
             "https://www.recaptcha.net"
@@ -1391,9 +1391,9 @@ class TokenBrowser:
 
         try:
             await page.route(
-                # 注意：Playwright glob 中单个 * 不跨越路径分隔符，
-                # StreamChat 的路径有多层目录（/_/AiSandboxAngularFrontend/...），
-                # 必须用 ** 才能匹配 flow.google.com 下的全部子路径。
+                # Note: in Playwright globs a single * does not cross path separators,
+                # and StreamChat paths have multiple directory levels (/_/AiSandboxAngularFrontend/...),
+                # so ** is required to match every subpath under flow.google.com.
                 "https://flow.google.com/**", _harvest_stream_route
             )
         except Exception as route_error:
@@ -1571,7 +1571,7 @@ class TokenBrowser:
             token_proxy_url=token_proxy_url
         )
 
-        # 先只记录代理，真实 UA/UA-CH 交给浏览器自己暴露，避免 user-agent 与 sec-ch-ua 版本错位。
+        # Only record the proxy first; let the browser expose the real UA/UA-CH to avoid a version mismatch between user-agent and sec-ch-ua.
         self._last_fingerprint = {
             "proxy_url": raw_proxy_url if raw_proxy_url else None,
         }
@@ -1803,7 +1803,7 @@ class TokenBrowser:
             return playwright, browser, context
 
     async def _capture_page_fingerprint(self, page):
-        """从浏览器页面提取 UA 与客户端提示头，确保与打码浏览器一致。"""
+        """Extract UA and client hint headers from the browser page so they match the captcha-solving browser."""
         try:
             fingerprint = await page.evaluate("""
                 () => {
@@ -1860,7 +1860,7 @@ class TokenBrowser:
     async def _verify_score_in_page(
         self, page, token: str, verify_url: str
     ) -> Dict[str, Any]:
-        """直接读取测试页面展示的分数，避免 verify.php 与页面显示口径不一致。"""
+        """Read the score displayed by the test page directly to avoid divergence between verify.php and the page display."""
         _ = token
         _ = verify_url
         started_at = time.time()
@@ -2048,7 +2048,7 @@ class TokenBrowser:
         context,
         action: str,
     ):
-        """等待上游请求结束后再关闭浏览器（超时兜底）。"""
+        """Wait for upstream requests to finish before closing the browser (with a timeout fallback)."""
         close_reason = "上游请求完成"
         try:
             await asyncio.wait_for(release_event.wait(), timeout=wait_timeout)
@@ -2073,15 +2073,15 @@ class TokenBrowser:
     async def _defer_browser_close_until_request_done(
         self, playwright, browser, context, action: str
     ) -> str:
-        """打码成功后延迟关闭浏览器，等待 Flow 请求结束通知。"""
+        """After a successful captcha solve, delay closing the browser to wait for the Flow completion notification."""
         flow_timeout = int(getattr(config, "flow_timeout", 300) or 300)
         upsample_timeout = int(getattr(config, "upsample_timeout", 300) or 300)
         if action == "IMAGE_GENERATION":
-            # 图片链路可能包含放大请求，等待上限至少覆盖 flow/upsample 超时
+            # The image path may include upscale requests, so the wait upper bound must at least cover the flow/upsample timeout
             base_timeout = max(flow_timeout, upsample_timeout)
             wait_timeout = max(base_timeout + 180, 900)
         else:
-            # 视频请求默认超时更长，给更大的缓冲避免“请求未结束就关闭”
+            # Video requests have a longer default timeout; allow a larger buffer to avoid closing before the request finishes
             wait_timeout = max(flow_timeout + 300, 1800)
         request_ref = uuid.uuid4().hex
         release_event = asyncio.Event()
@@ -2111,7 +2111,7 @@ class TokenBrowser:
     async def notify_generation_request_finished(
         self, request_ref: Optional[str] = None
     ):
-        """通知当前 Token 对应的上游图片/视频请求已结束。"""
+        """Notify that the upstream image/video request for the current Token has finished."""
         async with self._pending_release_lock:
             release_event = None
             matched_ref = request_ref
@@ -2119,7 +2119,7 @@ class TokenBrowser:
                 entry = self._pending_release_entries.pop(matched_ref)
                 release_event = entry.get("event")
             elif not matched_ref and self._pending_release_entries:
-                # 兼容旧调用方（无 request_ref），仅回收最早待释放项，避免一次性影响全部请求。
+                # Backward compatible with legacy callers (no request_ref): only reclaim the earliest pending release item to avoid affecting all requests at once.
                 matched_ref = next(iter(self._pending_release_entries.keys()))
                 entry = self._pending_release_entries.pop(matched_ref)
                 release_event = entry.get("event")
@@ -2245,7 +2245,7 @@ class TokenBrowser:
     )
 
     async def _dismiss_flow_overlays(self, page, rounds: int = 8) -> None:
-        """关闭项目页引导弹窗（Next/Continue 等），必要时移除无按钮的遮罩。"""
+        """Dismiss project page onboarding dialogs (Next/Continue, etc.), removing button-less overlays when necessary."""
         for _ in range(rounds):
             clicked = False
             for label in (
@@ -2291,11 +2291,12 @@ class TokenBrowser:
             return
 
     async def _harvest_token_via_ui_submit(self, page) -> Optional[Dict[str, Any]]:
-        """驱动页面 UI 提交一次生成并从被拦截的请求中提取 token / 会话 id。
+        """Drive the page UI to submit one generation and extract the token / session id from the intercepted request.
 
-        全新浏览器 context 没有本地引导状态，项目页可能反复弹出多步
-        引导弹窗（Previous/Continue 等）吞掉编辑器内容，因此输入与提交
-        都需要校验并重试，提交后在等待窗口内持续关闭后出现的弹窗。
+        A fresh browser context has no local onboarding state, so the project page may repeatedly
+        show a multi-step onboarding dialog (Previous/Continue, etc.) that swallows editor content.
+        Both input and submit must therefore be verified and retried, and any dialogs appearing
+        after submission are dismissed throughout the wait window.
         """
         await self._dismiss_flow_overlays(page)
         await page.wait_for_timeout(2500)
@@ -2334,7 +2335,7 @@ class TokenBrowser:
                         f"{type(e).__name__}: {str(e)[:150]}"
                     )
                     return None
-                # 输入过程中可能再次弹出引导弹窗，关闭后确认文本仍在
+                # The onboarding dialog may reappear while typing; confirm the text is still present after closing it
                 await self._dismiss_flow_overlays(page, rounds=2)
                 try:
                     current_text = await editor.inner_text()
@@ -2445,7 +2446,7 @@ class TokenBrowser:
         return {"token": token_match.group(1), "session_id": session_id}
 
     def get_last_harvest_session_id(self) -> Optional[str]:
-        """返回最近一次 harvest 得到的 Flow 会话 id（供主程序提交复用）。"""
+        """Return the Flow session id obtained from the most recent harvest (for reuse by the main program when submitting)."""
         return self._last_harvest_session_id
 
     async def _execute_custom_captcha(
@@ -2457,7 +2458,7 @@ class TokenBrowser:
         verify_url: Optional[str] = None,
         enterprise: bool = False,
     ) -> Any:
-        """在任意站点执行 reCAPTCHA，用于分数测试等非 Flow 场景。"""
+        """Run reCAPTCHA on an arbitrary site, for non-Flow scenarios such as score testing."""
         page = None
         try:
             page = await context.new_page()
@@ -2550,7 +2551,7 @@ class TokenBrowser:
                     f"[BrowserCaptcha] Token-{self.token_id} 自定义页面 readyState 未达到 complete，继续尝试预热"
                 )
 
-            # 模拟更自然的前台交互，避免冷启动空白上下文直接 execute。
+            # Simulate more natural foreground interaction to avoid executing directly in a cold blank context.
             try:
                 await page.mouse.move(320, 220)
                 await page.mouse.move(520, 320, steps=12)
@@ -2701,7 +2702,7 @@ class TokenBrowser:
         )
 
     def get_last_fingerprint(self) -> Optional[Dict[str, Any]]:
-        """返回最近一次打码浏览器的指纹快照。"""
+        """Return the fingerprint snapshot from the most recent captcha-solving browser."""
         if not self._last_fingerprint:
             return None
         return dict(self._last_fingerprint)
@@ -2716,7 +2717,7 @@ class TokenBrowser:
         timeout_ms: int = 15000,
         context_label: str = "",
     ) -> bool:
-        """等待 grecaptcha.enterprise 就绪，必要时补注入 enterprise.js。"""
+        """Wait for grecaptcha.enterprise to be ready, injecting enterprise.js if necessary."""
         wait_expression = (
             "typeof grecaptcha !== 'undefined' && "
             "typeof grecaptcha.enterprise !== 'undefined' && "
@@ -2765,7 +2766,7 @@ class TokenBrowser:
                 f"{type(inject_error).__name__}: {str(inject_error)[:150]}"
             )
 
-        # 最终兜底：Playwright add_script_tag（配合 CSP 剥除 route 生效）
+        # Final fallback: Playwright add_script_tag (works together with the CSP-stripping route)
         for script_host in (primary_host, secondary_host):
             try:
                 await page.add_script_tag(
@@ -2782,7 +2783,7 @@ class TokenBrowser:
 
     @staticmethod
     def _inject_recaptcha_token(payload: Any, token: str):
-        """递归更新 payload 内所有 reCAPTCHA token 字段。"""
+        """Recursively update every reCAPTCHA token field in the payload."""
         if isinstance(payload, dict):
             recaptcha_context = payload.get("recaptchaContext")
             if isinstance(recaptcha_context, dict):
@@ -2809,7 +2810,7 @@ class TokenBrowser:
         token_proxy_url: Optional[str] = None,
         token_id: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """在同一浏览器上下文中完成打码并直接提交 Flow 请求。"""
+        """Complete the captcha and submit the Flow request directly within the same browser context."""
         async with self._semaphore:
             self._solve_inflight += 1
             # Submission retries belong to FlowClient; replaying a timed-out POST
@@ -3281,9 +3282,10 @@ class BrowserCaptchaQueueTimeout(RuntimeError):
 
 
 class BrowserCaptchaService:
-    """多浏览器轮询打码服务（单例模式）
-    
-    支持配置浏览器数量，每个浏览器只开 1 个标签页，请求轮询分配
+    """Multi-browser round-robin captcha solving service (singleton)
+
+    Supports configuring the number of browsers; each browser opens only one tab,
+    and requests are distributed round-robin.
     """
     
     _instance: Optional["BrowserCaptchaService"] = None
@@ -3401,7 +3403,7 @@ class BrowserCaptchaService:
             return instance
     
     def _check_available(self):
-        """检查服务是否可用"""
+        """Check whether the service is available"""
         if DOCKER_HEADED_BLOCKED:
             raise RuntimeError(
                 "检测到 Docker 环境，默认禁用有头浏览器打码。"
@@ -3419,7 +3421,7 @@ class BrowserCaptchaService:
             )
     
     async def _load_browser_count(self):
-        """从数据库加载浏览器数量配置"""
+        """Load the browser count configuration from the database"""
         if self.db:
             try:
                 captcha_config = await self.db.get_captcha_config()
@@ -3432,7 +3434,7 @@ class BrowserCaptchaService:
                     f"[BrowserCaptcha] 加载 browser_count 配置失败: {e}，使用默认值 1"
                 )
                 self._browser_count = 1
-        # 并发限制 = 浏览器数量，不再硬编码限制
+        # Concurrency limit = number of browsers; no longer hard-coded
         self._token_semaphore = asyncio.Semaphore(self._browser_count)
         debug_logger.log_info(f"[BrowserCaptcha] 并发上限: {self._browser_count}")
     
@@ -3896,7 +3898,7 @@ class BrowserCaptchaService:
                     pass
 
     async def _get_or_create_browser(self, browser_id: int) -> TokenBrowser:
-        """获取或创建指定 ID 的浏览器实例"""
+        """Get or create the browser instance with the given ID"""
         async with self._browsers_lock:
             if self._closed:
                 raise RuntimeError("Browser captcha service is closed")
@@ -3910,7 +3912,7 @@ class BrowserCaptchaService:
             return self._browsers[browser_id]
     
     def _get_next_browser_id(self) -> int:
-        """轮询获取下一个浏览器 ID"""
+        """Get the next browser ID in round-robin order"""
         browser_id = self._round_robin_index % self._browser_count
         self._round_robin_index += 1
         return browser_id
@@ -3919,7 +3921,7 @@ class BrowserCaptchaService:
     def _compose_browser_ref(
         browser_id: int, request_ref: Optional[str]
     ) -> Union[int, str]:
-        """将 browser_id 与 request_ref 合并为可回传的请求句柄。"""
+        """Merge browser_id and request_ref into a request handle that can be passed back."""
         if request_ref:
             return f"{browser_id}:{request_ref}"
         return browser_id
@@ -3928,7 +3930,7 @@ class BrowserCaptchaService:
     def _parse_browser_ref(
         browser_ref: Optional[Union[int, str]],
     ) -> tuple[Optional[int], Optional[str]]:
-        """解析请求句柄，兼容旧的纯 int browser_id。"""
+        """Parse a request handle, remaining compatible with a plain int browser_id."""
         if browser_ref is None:
             return None, None
 
@@ -3946,7 +3948,7 @@ class BrowserCaptchaService:
         return None, None
 
     async def _resolve_token_proxy_url(self, token_id: Optional[int]) -> Optional[str]:
-        """读取 token 级打码代理，为空时回退全局配置。"""
+        """Read the token-level captcha proxy, falling back to the global config when empty."""
         if not token_id or not self.db:
             return None
         try:
@@ -4059,7 +4061,7 @@ class BrowserCaptchaService:
     async def get_fingerprint(
         self, browser_ref: Optional[Union[int, str]]
     ) -> Optional[Dict[str, Any]]:
-        """获取指定浏览器最近一次打码时的指纹快照。"""
+        """Get the fingerprint snapshot from the given browsers most recent captcha solve."""
         browser_id, _ = self._parse_browser_ref(browser_ref)
         if browser_id is None:
             return None

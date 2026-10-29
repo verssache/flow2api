@@ -17,7 +17,7 @@
     </script>
 </head>
 <body class="h-full bg-background text-foreground antialiased">
-    <!-- 导航栏 -->
+    <!-- Navbar -->
     <header class="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
         <div class="mx-auto flex h-14 max-w-7xl items-center px-6">
             <div class="mr-4 flex items-baseline gap-3">
@@ -43,7 +43,7 @@
     </header>
 
     <main class="mx-auto max-w-7xl px-6 py-6">
-        <!-- Tab 导航 -->
+        <!-- Tab navigation -->
         <div class="border-b border-border mb-6 overflow-x-auto">
             <nav class="flex min-w-max space-x-8">
                 <button onclick="switchTab('tokens')" id="tabTokens" class="tab-btn border-b-2 border-primary text-sm font-medium py-3 px-1"><span data-i18n="Token 管理">Token 管理</span></button>
@@ -53,9 +53,9 @@
             </nav>
         </div>
 
-        <!-- Token 管理面板 -->
+        <!-- Token management panel -->
         <div id="panelTokens">
-            <!-- 统计卡片 -->
+            <!-- Stats cards -->
             <div class="grid gap-4 grid-cols-2 md:grid-cols-5 mb-6">
                 <div class="rounded-lg border border-border bg-background p-4">
                     <p class="text-sm font-medium text-muted-foreground mb-2"><span data-i18n="Token 总数">Token 总数</span></p>
@@ -79,12 +79,12 @@
                 </div>
             </div>
 
-            <!-- Token 列表 -->
+            <!-- Token list -->
             <div class="rounded-lg border border-border bg-background">
                 <div class="flex flex-wrap items-center justify-between gap-4 p-4 border-b border-border">
                     <h3 class="text-lg font-semibold"><span data-i18n="Token 列表">Token 列表</span></h3>
                     <div class="flex flex-wrap items-center gap-3">
-                        <!-- 登录态自动校验开关 -->
+                        <!-- Login state auto-validation toggle -->
                         <div class="flex items-center gap-2">
                             <span class="text-xs text-muted-foreground"><span data-i18n="自动校验登录态">自动校验登录态</span></span>
                             <div class="relative inline-flex items-center group">
@@ -92,14 +92,14 @@
                                     <input type="checkbox" id="atAutoRefreshToggle" onchange="toggleATAutoRefresh()" class="sr-only peer">
                                     <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                                 </label>
-                                <!-- 悬浮提示 -->
+                                <!-- Tooltip -->
                                 <div class="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs rounded px-2 py-1 w-48 whitespace-normal opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                                     <span data-i18n="定时验证 Google Cookie 并更新账号凭证">定时验证 Google Cookie 并更新账号凭证</span>
                                     <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
                                 </div>
                             </div>
                         </div>
-                        <!-- 全局刷新间隔 -->
+                        <!-- Global refresh interval -->
                         <div class="flex items-center gap-2" title="立即把所有账号的 Cookie 刷新周期改成该值" data-i18n-title="立即把所有账号的 Cookie 刷新周期改成该值">
                             <span class="text-xs text-muted-foreground"><span data-i18n="刷新间隔(分钟)">刷新间隔(分钟)</span></span>
                             <input id="globalRefreshIntervalMinutes" type="number" min="1" max="10080" class="flex h-8 w-20 rounded-md border border-input bg-background px-2 py-1 text-sm">
@@ -154,17 +154,17 @@
                             </tr>
                         </thead>
                         <tbody id="tokenTableBody" class="divide-y divide-border">
-                            <!-- 动态填充 -->
+                            <!-- Dynamically populated -->
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- 系统配置面板 -->
+        <!-- System configuration panel -->
         <div id="panelSettings" class="hidden">
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <!-- 安全配置 -->
+                <!-- Security configuration -->
                 <div class="rounded-lg border border-border bg-background p-6 flex flex-col">
                     <h3 class="text-lg font-semibold mb-4"><span data-i18n="安全配置">安全配置</span></h3>
                     <div class="space-y-4 flex-1">
@@ -185,7 +185,7 @@
                     <button onclick="updateAdminPassword()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 w-full mt-4"><span data-i18n="修改密码">修改密码</span></button>
                 </div>
 
-                <!-- API 密钥配置 -->
+                <!-- API key configuration -->
                 <div class="rounded-lg border border-border bg-background p-6 flex flex-col">
                     <h3 class="text-lg font-semibold mb-4"><span data-i18n="API 密钥配置">API 密钥配置</span></h3>
                     <div class="space-y-4 flex-1">
@@ -203,7 +203,7 @@
                     <button onclick="updateAPIKey()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 w-full mt-4"><span data-i18n="更新 API Key">更新 API Key</span></button>
                 </div>
 
-                <!-- 代理配置 -->
+                <!-- Proxy configuration -->
                 <div class="rounded-lg border border-border bg-background p-6 flex flex-col">
                     <h3 class="text-lg font-semibold mb-4"><span data-i18n="代理配置">代理配置</span></h3>
                     <div class="space-y-4 flex-1">
@@ -238,7 +238,7 @@
                     <p id="proxyTestResult" class="text-xs text-muted-foreground mt-2"><span data-i18n="测试目标：">测试目标：</span><code class="bg-muted px-1 py-0.5 rounded">https://flow.google.com/</code></p>
                 </div>
 
-                <!-- 生成配置 -->
+                <!-- Generation configuration -->
                 <div class="rounded-lg border border-border bg-background p-6 flex flex-col">
                     <h3 class="text-lg font-semibold mb-4"><span data-i18n="生成配置">生成配置</span></h3>
                     <div class="space-y-4 flex-1">
@@ -276,7 +276,7 @@
                     <button onclick="saveCallLogicConfig()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 w-full mt-4"><span data-i18n="保存配置">保存配置</span></button>
                 </div>
 
-                <!-- 错误处理配置 -->
+                <!-- Error handling configuration -->
                 <div class="rounded-lg border border-border bg-background p-6 flex flex-col">
                     <h3 class="text-lg font-semibold mb-4"><span data-i18n="错误处理配置">错误处理配置</span></h3>
                     <div class="space-y-4 flex-1">
@@ -289,7 +289,7 @@
                     <button onclick="saveAdminConfig()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 w-full mt-4"><span data-i18n="保存配置">保存配置</span></button>
                 </div>
 
-                <!-- 缓存配置 -->
+                <!-- Cache configuration -->
                 <div class="rounded-lg border border-border bg-background p-6 flex flex-col">
                     <h3 class="text-lg font-semibold mb-4"><span data-i18n="缓存配置">缓存配置</span></h3>
                     <div class="space-y-4 flex-1">
@@ -301,7 +301,7 @@
                             <p class="text-xs text-muted-foreground mt-1"><span data-i18n="关闭后，生成的图片和视频将直接输出原始链接，不会缓存到本地">关闭后，生成的图片和视频将直接输出原始链接，不会缓存到本地</span></p>
                         </div>
 
-                        <!-- 缓存配置选项 -->
+                        <!-- Cache configuration options -->
                         <div id="cacheOptions" style="display: none;" class="space-y-4 pt-4 border-t border-border">
                             <div>
                                 <label class="text-sm font-medium mb-2 block"><span data-i18n="缓存超时时间（秒）">缓存超时时间（秒）</span></label>
@@ -323,7 +323,7 @@
                     <button onclick="saveCacheConfig()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 w-full mt-4"><span data-i18n="保存配置">保存配置</span></button>
                 </div>
 
-                <!-- 插件连接配置 -->
+                <!-- Extension connection configuration -->
                 <div class="rounded-lg border border-border bg-background p-6 flex flex-col">
                     <h3 class="text-lg font-semibold mb-4"><span data-i18n="插件连接配置">插件连接配置</span></h3>
                     <div class="space-y-4 flex-1">
@@ -360,7 +360,7 @@
                     <button onclick="savePluginConfig()" class="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 w-full mt-4"><span data-i18n="保存配置">保存配置</span></button>
                 </div>
 
-                <!-- 验证码配置 -->
+                <!-- CAPTCHA configuration -->
                 <div class="rounded-lg border border-border bg-background p-6 flex flex-col">
                     <h3 class="text-lg font-semibold mb-4"><span data-i18n="验证码配置">验证码配置</span></h3>
                     <div class="space-y-4 flex-1">
@@ -381,7 +381,7 @@
                             <p class="text-xs text-muted-foreground mt-1"><span data-i18n="选择验证码获取方式">选择验证码获取方式</span></p>
                         </div>
 
-                        <!-- YesCaptcha配置选项 -->
+                        <!-- YesCaptcha configuration options -->
                         <div id="yescaptchaOptions" class="space-y-4">
                             <div>
                                 <label class="text-sm font-medium mb-2 block"><span data-i18n="YesCaptcha API密钥">YesCaptcha API密钥</span></label>
@@ -405,7 +405,7 @@
                             </div>
                         </div>
 
-                        <!-- Captcha.run配置选项 -->
+                        <!-- Captcha.run configuration options -->
                         <div id="captcharunOptions" class="hidden space-y-4">
                             <div>
                                 <label class="text-sm font-medium mb-2 block"><span data-i18n="Captcha.run API密钥">Captcha.run API密钥</span></label>
@@ -419,7 +419,7 @@
                             </div>
                         </div>
 
-                        <!-- 2Captcha配置选项 -->
+                        <!-- 2Captcha configuration options -->
                         <div id="twocaptchaOptions" class="hidden space-y-4">
                             <div>
                                 <label class="text-sm font-medium mb-2 block"><span data-i18n="2Captcha API密钥">2Captcha API密钥</span></label>
@@ -433,7 +433,7 @@
                             </div>
                         </div>
 
-                        <!-- CapMonster配置选项 -->
+                        <!-- CapMonster configuration options -->
                         <div id="capmonsterOptions" class="hidden space-y-4">
                             <div>
                                 <label class="text-sm font-medium mb-2 block"><span data-i18n="CapMonster API密钥">CapMonster API密钥</span></label>
@@ -447,7 +447,7 @@
                             </div>
                         </div>
 
-                        <!-- EzCaptcha配置选项 -->
+                        <!-- EzCaptcha configuration options -->
                         <div id="ezcaptchaOptions" class="hidden space-y-4">
                             <div>
                                 <label class="text-sm font-medium mb-2 block"><span data-i18n="EzCaptcha API密钥">EzCaptcha API密钥</span></label>
@@ -461,7 +461,7 @@
                             </div>
                         </div>
 
-                        <!-- CapSolver配置选项 -->
+                        <!-- CapSolver configuration options -->
                         <div id="capsolverOptions" class="hidden space-y-4">
                             <div>
                                 <label class="text-sm font-medium mb-2 block"><span data-i18n="CapSolver API密钥">CapSolver API密钥</span></label>
@@ -475,7 +475,7 @@
                             </div>
                         </div>
 
-                        <!-- 浏览器打码配置选项 -->
+                        <!-- Browser CAPTCHA solving configuration options -->
                         <div id="browserCaptchaOptions" class="hidden space-y-4">
                             <div class="rounded-md bg-blue-50 dark:bg-blue-900/20 p-3 border border-blue-200 dark:border-blue-800">
                                 <p class="text-xs text-blue-800 dark:text-blue-200">
@@ -507,7 +507,7 @@
                             </div>
                         </div>
 
-                        <!-- 内置浏览器打码配置选项 -->
+                        <!-- Built-in browser CAPTCHA solving configuration options -->
                         <div id="personalOptions" class="hidden space-y-4">
                             <div class="rounded-md bg-blue-50 dark:bg-blue-900/20 p-3 border border-blue-200 dark:border-blue-800">
                                 <p class="text-xs text-blue-800 dark:text-blue-200">
@@ -577,7 +577,7 @@
                             </div>
                         </div>
 
-                        <!-- 远程有头打码配置选项 -->
+                        <!-- Remote headed CAPTCHA solving configuration options -->
                         <div id="remoteBrowserOptions" class="hidden space-y-4">
                             <div class="rounded-md bg-blue-50 dark:bg-blue-900/20 p-3 border border-blue-200 dark:border-blue-800">
                                 <p class="text-xs text-blue-800 dark:text-blue-200">
@@ -604,7 +604,7 @@
                     </div>
                 </div>
 
-                <!-- 调试配置 -->
+                <!-- Debug configuration -->
                 <div class="rounded-lg border border-border bg-background p-6 flex flex-col">
                     <h3 class="text-lg font-semibold mb-4"><span data-i18n="调试配置">调试配置</span></h3>
                     <div class="space-y-4 flex-1">
@@ -626,7 +626,7 @@
             </div>
         </div>
 
-        <!-- 请求日志面板 -->
+        <!-- Request log panel -->
         <div id="panelLogs" class="hidden">
             <div class="rounded-lg border border-border bg-background">
                 <div class="flex flex-wrap items-center justify-between gap-4 p-4 border-b border-border">
@@ -661,14 +661,14 @@
                             </tr>
                         </thead>
                         <tbody id="logsTableBody" class="divide-y divide-border">
-                            <!-- 动态填充 -->
+                            <!-- Dynamically populated -->
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- 日志详情模态框 -->
+        <!-- Log detail modal -->
         <div id="logDetailModal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
             <div class="bg-background rounded-lg border border-border w-full max-w-3xl shadow-xl max-h-[80vh] flex flex-col">
                 <div class="flex items-center justify-between p-5 border-b border-border">
@@ -682,13 +682,13 @@
                 </div>
                 <div class="p-5 overflow-y-auto">
                     <div id="logDetailContent" class="space-y-4">
-                        <!-- 动态填充 -->
+                        <!-- Dynamically populated -->
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 清空日志选项模态框 -->
+        <!-- Clear log options modal -->
         <div id="clearLogsModal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onclick="if(event.target===this)closeClearLogsModal()">
             <div class="bg-background rounded-lg border border-border w-full max-w-sm shadow-xl">
                 <div class="flex items-center justify-between p-5 border-b border-border">
@@ -715,13 +715,13 @@
             </div>
         </div>
 
-        <!-- 页脚 -->
+        <!-- Footer -->
         <footer class="mt-12 pt-6 border-t border-border text-center text-xs text-muted-foreground">
             <p>© 2025 <a href="https://linux.do/u/thesmallhancat/summary" target="_blank" class="no-underline hover:underline" style="color: inherit;">TheSmallHanCat</a> && <a href="https://linux.do/u/tibbar/summary" target="_blank" class="no-underline hover:underline" style="color: inherit;">Tibbar</a>. All rights reserved.</p>
         </footer>
     </main>
 
-    <!-- 添加 Token 模态框 -->
+    <!-- Add Token modal -->
     <div id="addModal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-background rounded-lg border border-border w-full max-w-2xl shadow-xl my-auto">
             <div class="flex items-center justify-between p-5 border-b border-border sticky top-0 bg-background">
@@ -793,7 +793,7 @@
                     </div>
                 </div>
 
-                <!-- 功能开关 -->
+                <!-- Feature toggles -->
                 <div class="space-y-3 pt-2 border-t border-border">
                     <label class="text-sm font-medium"><span data-i18n="功能开关">功能开关</span></label>
                     <div class="space-y-2">
@@ -829,7 +829,7 @@
         </div>
     </div>
 
-    <!-- 编辑 Token 模态框 -->
+    <!-- Edit Token modal -->
     <div id="editModal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-background rounded-lg border border-border w-full max-w-2xl shadow-xl my-auto">
             <div class="flex items-center justify-between p-5 border-b border-border sticky top-0 bg-background">
@@ -902,7 +902,7 @@
                     </div>
                 </div>
 
-                <!-- 功能开关 -->
+                <!-- Feature toggles -->
                 <div class="space-y-3 pt-2 border-t border-border">
                     <label class="text-sm font-medium"><span data-i18n="功能开关">功能开关</span></label>
                     <div class="space-y-2">
@@ -938,7 +938,7 @@
         </div>
     </div>
 
-    <!-- 账号导入模态框 -->
+    <!-- Account import modal -->
     <div id="importModal" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
         <div class="bg-background rounded-lg border border-border w-full max-w-md shadow-xl">
             <div class="flex items-center justify-between p-5 border-b border-border">

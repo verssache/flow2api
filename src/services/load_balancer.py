@@ -79,11 +79,11 @@ class LoadBalancer:
     async def _get_token_load(
         self, token_id: int, for_image_generation: bool, for_video_generation: bool
     ) -> tuple[int, Optional[int]]:
-        """获取 token 当前负载。
+        """Get the token's current load.
 
         Returns:
             (inflight, remaining)
-            remaining 为 None 表示无限制
+            remaining is None when unlimited
         """
         if not self.concurrency_manager:
             return 0, None
@@ -111,7 +111,7 @@ class LoadBalancer:
     async def _reserve_slot(
         self, token_id: int, for_image_generation: bool, for_video_generation: bool
     ) -> bool:
-        """尝试为当前 token 预占一个生成槽位。"""
+        """Try to reserve a generation slot for the current token."""
         if not self.concurrency_manager:
             return True
 
@@ -280,7 +280,7 @@ class LoadBalancer:
             )
             return None
 
-        # 最低 in-flight 优先；有并发上限时，剩余槽位更多的 token 优先；最后随机打散
+        # Lowest in-flight first; when a concurrency cap exists, tokens with more remaining slots first; finally shuffle randomly
         call_mode = config.call_logic_mode
         if call_mode == "polling":
             scenario = "default"
@@ -331,7 +331,7 @@ class LoadBalancer:
                 f"needs_refresh={item['needs_refresh']}, credits={token.credits}"
             )
 
-        # 只为候选列表中真正尝试到的 token 做 AT 校验，避免每次请求把所有 token 全扫一遍
+        # Only validate AT for tokens actually attempted in the candidate list, avoiding a full scan of all tokens on every request
         for item in available_tokens:
             token = item["token"]
             token_id = token.id
@@ -374,7 +374,7 @@ class LoadBalancer:
         for_video_generation: bool = False,
         model: Optional[str] = None,
     ) -> Optional[str]:
-        """给出更明确的“无可用账号”原因，优先用于分辨率/tier 档位提示。"""
+        """Provide a clearer "no available account" reason, preferred for resolution/tier hinting."""
         active_tokens = await self.token_manager.get_active_tokens()
         if not active_tokens:
             return None
