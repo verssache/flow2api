@@ -300,11 +300,6 @@ app.mount("/tmp", StaticFiles(directory=str(tmp_dir)), name="tmp")
 
 # HTML routes for frontend
 static_path = Path(__file__).parent.parent / "static"
-app.mount(
-    "/static/locales",
-    StaticFiles(directory=str(static_path / "locales")),
-    name="locales",
-)
 _STATIC_PAGE_NO_CACHE_HEADERS = {
     "Cache-Control": "no-store, no-cache, must-revalidate",
     "Pragma": "no-cache",

@@ -103,7 +103,7 @@ class ProxyManager:
         parsed = self._parse_proxy_line(raw)
         if not parsed:
             raise ValueError(
-                "代理地址格式错误，支持示例："
+                "Invalid proxy address format, supported examples: "
                 "http://user:pass@host:port / "
                 "socks5://user:pass@host:port / "
                 "host:port:user:pass / st5 host:port:user:pass"

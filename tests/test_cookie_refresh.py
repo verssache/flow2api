@@ -542,19 +542,19 @@ class TokenCookieRefreshTests(unittest.IsolatedAsyncioTestCase):
         # Do not overwrite the local account email, and do not save another account's Cookie
         self.assertEqual(latest.email, EMAIL)
         self.assertEqual(latest.google_cookies, COOKIES)
-        self.assertIn("已被 Token", latest.last_st_refresh_result)
+        self.assertIn("already used by Token", latest.last_st_refresh_result)
 
     async def test_personal_network_failures_keep_account_active(self):
         self.flow._is_proxy_connection_error.return_value = False
         self.flow._is_retryable_network_error.return_value = False
-        self.flow.st_to_at.side_effect = TimeoutError("认证请求响应超时")
+        self.flow.st_to_at.side_effect = TimeoutError("Authentication request timed out")
         self.login_mock.return_value = {
             "success": False,
             "error": "connection timed out",
         }
         for error in (
             TimeoutError(),
-            TimeoutError("页面响应超时"),
+            TimeoutError("Page response timed out"),
             ConnectionError("connection reset"),
             RuntimeError("proxy connection failed"),
         ):
@@ -585,7 +585,7 @@ class TokenCookieRefreshTests(unittest.IsolatedAsyncioTestCase):
             "success": False,
             "error": "rpc=nzlxg, code=401",
         }
-        pool = make_failing_personal_pool(RuntimeError("Flow 登录已失效"))
+        pool = make_failing_personal_pool(RuntimeError("Flow login has expired"))
         with (
             patch("src.services.token_manager.config") as config,
             patch.object(PersonalService, "get_instance", AsyncMock(return_value=pool)),

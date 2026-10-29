@@ -1,15 +1,15 @@
-"""Guard test: no place may ever produce hard-failure messages like "Flow login account does not match the current Token".
+"""Guard test: no place may ever produce hard-failure identity-mismatch messages.
 
-The real account is authoritative from the Flow page and the local email is auto-corrected on refresh;
-only "this account is already occupied by another Token" may raise.
+The real account is authoritative from the Flow page and the local email is auto-corrected
+on refresh; only an account already occupied by another Token may raise.
 """
 
 import pathlib
 import unittest
 
 FORBIDDEN_SNIPPETS = (
-    "与当前 Token 不一致",
-    "请同步对应账号的 Google Cookies",
+    "\u4e0e\u5f53\u524d Token \u4e0d\u4e00\u81f4",
+    "\u8bf7\u540c\u6b65\u5bf9\u5e94\u8d26\u53f7\u7684 Google Cookies",
 )
 
 SRC_ROOT = pathlib.Path(__file__).resolve().parent.parent / "src"
@@ -28,7 +28,11 @@ class NoIdentityMismatchErrorTests(unittest.TestCase):
             for snippet in FORBIDDEN_SNIPPETS:
                 if snippet in text:
                     offenders.append(f"{path}: {snippet}")
-        self.assertEqual(offenders, [], "发现禁止出现的身份不一致提示：" + "; ".join(offenders))
+        self.assertEqual(
+            offenders,
+            [],
+            "Forbidden identity-mismatch messages found: " + "; ".join(offenders),
+        )
 
 
 class LegacyRefreshResultSanitizerTests(unittest.TestCase):
@@ -40,14 +44,13 @@ class LegacyRefreshResultSanitizerTests(unittest.TestCase):
         self.admin = admin_mod
 
     def legacy_text(self):
-        # Constructed by concatenation to keep the forbidden full message out of the source
         return (
-            "RuntimeError: Flow 登录账号"
-            + "与当前 Token 不一致，请同步对应账号的 Google Cookies"
+            "RuntimeError: Flow \u767b\u5f55\u8d26\u53f7"
+            + "\u4e0e\u5f53\u524d Token \u4e0d\u4e00\u81f4，"
+            + "\u8bf7\u540c\u6b65\u5bf9\u5e94\u8d26\u53f7\u7684 Google Cookies"
         )
 
     def test_legacy_identity_error_is_dropped(self):
-        # Such legacy errors are no longer shown: normalized to an empty string
         self.assertEqual(self.admin._sanitize_refresh_result(self.legacy_text()), "")
 
     def test_other_errors_are_kept(self):

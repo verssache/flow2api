@@ -112,14 +112,14 @@ class ApiCaptchaFingerprintTests(unittest.IsolatedAsyncioTestCase):
                 action="IMAGE_GENERATION",
             )
 
-        self.assertIsNotNone(result, "函数不应返回 None, 因为我们 mock 了 ready 状态")
+        self.assertIsNotNone(result, "The function must not return None because the ready state is mocked")
         self.assertIsInstance(
-            result, tuple, "_get_api_captcha_token 应返回 (token, userAgent) 元组"
+            result, tuple, "_get_api_captcha_token must return a (token, userAgent) tuple"
         )
         token, user_agent = result
         self.assertEqual(token, "token-abc")
         self.assertIn(
-            "Windows", user_agent, "userAgent 应当来自打码服务 solution, 包含 Windows"
+            "Windows", user_agent, "userAgent must come from the captcha service solution and contain Windows"
         )
         self.assertIn("Chrome/147", user_agent)
         self.assertEqual(fake_session.requests[0][1]["json"]["softID"], "33424")

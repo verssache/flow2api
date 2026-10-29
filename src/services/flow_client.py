@@ -423,7 +423,7 @@ class _FlowClientBase(FlowFrontendMixin):
             return st_value or None
         except Exception as e:
             debug_logger.log_warning(
-                f"[VIDEO WARMUP] 读取 Token-{token_id} 的 ST 失败: {e}"
+                f"[VIDEO WARMUP] Failed to read ST for Token-{token_id}: {e}"
             )
             return None
 
@@ -575,7 +575,7 @@ class _FlowClientBase(FlowFrontendMixin):
             if isinstance(fingerprint, dict):
                 proxy_for_log = proxy_url if proxy_url else "direct"
                 debug_logger.log_info(
-                    f"[FINGERPRINT] 使用打码浏览器指纹提交请求: UA={headers.get('User-Agent', '')[:120]}, proxy={proxy_for_log}"
+                    f"[FINGERPRINT] Submitting request with captcha browser fingerprint: UA={headers.get('User-Agent', '')[:120]}, proxy={proxy_for_log}"
                 )
             debug_logger.log_request(
                 method=method,
@@ -661,7 +661,7 @@ class _FlowClientBase(FlowFrontendMixin):
 
             if allow_urllib_fallback and self._should_fallback_to_urllib(error_msg):
                 debug_logger.log_warning(
-                    f"[HTTP FALLBACK] curl_cffi 请求失败，回退 urllib: {method.upper()} {url}"
+                    f"[HTTP FALLBACK] curl_cffi request failed, falling back to urllib: {method.upper()} {url}"
                 )
                 try:
                     return await asyncio.to_thread(
@@ -675,7 +675,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     )
                 except Exception as fallback_error:
                     debug_logger.log_error(
-                        f"[HTTP FALLBACK] urllib 回退也失败: {fallback_error}"
+                        f"[HTTP FALLBACK] urllib fallback also failed: {fallback_error}"
                     )
                     raise Exception(
                         f"Flow API request failed: curl={error_msg}; urllib={fallback_error}"
@@ -841,7 +841,7 @@ class _FlowClientBase(FlowFrontendMixin):
             if isinstance(fingerprint, dict):
                 proxy_for_log = proxy_url if proxy_url else "direct"
                 debug_logger.log_info(
-                    f"[FINGERPRINT] 使用打码浏览器指纹提交文本请求: UA={headers.get('User-Agent', '')[:120]}, proxy={proxy_for_log}"
+                    f"[FINGERPRINT] Submitting text request with captcha browser fingerprint: UA={headers.get('User-Agent', '')[:120]}, proxy={proxy_for_log}"
                 )
             debug_logger.log_request(
                 method=method,
@@ -1127,7 +1127,7 @@ class _FlowClientBase(FlowFrontendMixin):
         error_lower = error_str.lower()
         if (
             "recaptcha evaluation failed" in error_lower
-            or "recaptcha 验证失败" in error_str
+            or "recaptcha verification failed" in error_str
         ):
             return max(
                 effective_max_retries,
@@ -1266,8 +1266,8 @@ class _FlowClientBase(FlowFrontendMixin):
         if has_fingerprint_context and prefer_media_first:
             prefer_media_first = False
             debug_logger.log_info(
-                "[IMAGE] 检测到打码浏览器指纹上下文，首跳固定走打码链路；"
-                "媒体代理仅在网络超时时作为兜底回退。"
+                "[IMAGE] Captcha browser fingerprint context detected; the first hop always uses the captcha route;"
+                "the media proxy is only used as a fallback on network timeout."
             )
 
         last_error: Optional[Exception] = None
@@ -1283,7 +1283,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     prefer_media_proxy = prefer_media_first
             else:
                 prefer_media_proxy = False
-            route_label = "媒体代理链路" if prefer_media_proxy else "打码链路"
+            route_label = "media proxy route" if prefer_media_proxy else "captcha route"
             http_attempt_started_at = time.time()
             http_attempt_info: Optional[Dict[str, Any]] = None
             if isinstance(attempt_trace, dict):
@@ -1389,19 +1389,19 @@ class _FlowClientBase(FlowFrontendMixin):
                 else:
                     next_prefer_media_proxy = prefer_media_proxy
                 next_route_label = (
-                    "媒体代理链路" if next_prefer_media_proxy else "打码链路"
+                    "media proxy route" if next_prefer_media_proxy else "captcha route"
                 )
                 debug_logger.log_warning(
-                    f"[IMAGE] 图片生成请求网络超时，准备快速重试 "
-                    f"({attempt_index + 2}/{total_attempts})，当前链路={route_label}，"
-                    f"下一链路={next_route_label}，timeout={request_timeout}s"
+                    f"[IMAGE] Image generation request network timeout, preparing quick retry "
+                    f"({attempt_index + 2}/{total_attempts}), current route={route_label},"
+                    f"next route={next_route_label}, timeout={request_timeout}s"
                 )
                 if retry_delay > 0:
                     await asyncio.sleep(retry_delay)
 
         if last_error is not None:
             raise last_error
-        raise RuntimeError("图片生成请求失败")
+        raise RuntimeError("Image generation request failed")
 
     # ========== Authentication (uses ST) ==========
 
@@ -1516,13 +1516,13 @@ class _FlowClientBase(FlowFrontendMixin):
             except Exception as e:
                 last_error = e
                 retry_reason = (
-                    "网络超时"
+                    "Network timeout"
                     if self._is_timeout_error(e)
                     else self._get_retry_reason(str(e))
                 )
                 if retry_reason and retry_attempt < max_retries - 1:
                     debug_logger.log_warning(
-                        f"[PROJECT] 创建项目失败，准备重试 ({retry_attempt + 2}/{max_retries}) "
+                        f"[PROJECT] Project creation failed, preparing retry ({retry_attempt + 2}/{max_retries}) "
                         f"title={title!r}, reason={retry_reason}: {e}"
                     )
                     await asyncio.sleep(1)
@@ -1531,7 +1531,7 @@ class _FlowClientBase(FlowFrontendMixin):
 
         if last_error is not None:
             raise last_error
-        raise RuntimeError("创建项目失败")
+        raise RuntimeError("Project creation failed")
 
     async def delete_project(self, st: str, project_id: str):
         """Delete a project
@@ -1769,7 +1769,7 @@ class _FlowClientBase(FlowFrontendMixin):
             except Exception as new_upload_error:
                 last_error = new_upload_error
                 retry_reason = (
-                    "网络超时"
+                    "Network timeout"
                     if self._is_timeout_error(new_upload_error)
                     else self._get_retry_reason(str(new_upload_error))
                 )
@@ -1778,7 +1778,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 if normalized_project_id:
                     if retry_reason and retry_attempt < max_retries - 1:
                         debug_logger.log_warning(
-                            f"[UPLOAD] Project-scoped upload 遇到{retry_reason}，准备重试新版接口 "
+                            f"[UPLOAD] Project-scoped upload encountered {retry_reason}, preparing retry with the new API "
                             f"({retry_attempt + 2}/{max_retries}, project_id={normalized_project_id})..."
                         )
                         await asyncio.sleep(1)
@@ -1816,7 +1816,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 retry_reason = self._get_retry_reason(str(legacy_upload_error))
                 if retry_reason and retry_attempt < max_retries - 1:
                     debug_logger.log_warning(
-                        f"[UPLOAD] 上传遇到{retry_reason}，准备重试 ({retry_attempt + 2}/{max_retries})..."
+                        f"[UPLOAD] Upload encountered {retry_reason}, preparing retry ({retry_attempt + 2}/{max_retries})..."
                     )
                     await asyncio.sleep(1)
                     continue
@@ -1824,7 +1824,7 @@ class _FlowClientBase(FlowFrontendMixin):
 
         if last_error is not None:
             raise last_error
-        raise RuntimeError("上传图片失败")
+        raise RuntimeError("Image upload failed")
 
     # ========== Image generation (uses AT) - synchronous return ==========
 
@@ -1941,7 +1941,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     max_retries=max_retries,
                     browser_id=browser_id,
                     project_id=project_id,
-                    log_prefix="[IMAGE] 生成",
+                    log_prefix="[IMAGE] Generate",
                 )
                 if should_retry:
                     continue
@@ -2035,7 +2035,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     max_retries=max_retries,
                     browser_id=browser_id,
                     project_id=project_id,
-                    log_prefix="[IMAGE] 生成",
+                    log_prefix="[IMAGE] Generate",
                 )
                 if should_retry:
                     continue
@@ -2088,7 +2088,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     max_retries=max_retries,
                     browser_id=browser_id,
                     project_id=project_id,
-                    log_prefix="[IMAGE UPSAMPLE] 放大",
+                    log_prefix="[IMAGE UPSAMPLE] Upscale",
                 )
                 if should_retry:
                     continue
@@ -2131,7 +2131,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     max_retries=max_retries,
                     browser_id=browser_id,
                     project_id=project_id,
-                    log_prefix="[IMAGE UPSAMPLE] 放大",
+                    log_prefix="[IMAGE UPSAMPLE] Upscale",
                 )
                 if should_retry:
                     continue
@@ -2557,7 +2557,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     max_retries=max_retries,
                     browser_id=browser_id,
                     project_id=project_id,
-                    log_prefix="[VIDEO T2V] 生成",
+                    log_prefix="[VIDEO T2V] Generate",
                 )
                 if should_retry:
                     retry_attempt += 1
@@ -2655,7 +2655,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     max_retries=max_retries,
                     browser_id=browser_id,
                     project_id=project_id,
-                    log_prefix="[VIDEO T2V] 生成",
+                    log_prefix="[VIDEO T2V] Generate",
                     defer_browser_error_notification=True,
                 )
                 if should_retry:
@@ -2829,7 +2829,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     )
                 except Exception as e:
                     debug_logger.log_warning(
-                        f"[VIDEO WARMUP] Labs GET 失败 ({path_with_query}): {e}"
+                        f"[VIDEO WARMUP] Labs GET failed ({path_with_query}): {e}"
                     )
 
             labs_batch_log_payload = {
@@ -2863,7 +2863,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 )
             except Exception as e:
                 debug_logger.log_warning(
-                    f"[VIDEO WARMUP] Labs submitBatchLog 失败: {e}"
+                    f"[VIDEO WARMUP] Labs submitBatchLog failed: {e}"
                 )
 
         try:
@@ -2878,10 +2878,10 @@ class _FlowClientBase(FlowFrontendMixin):
                 account_id=account_id,
             )
         except Exception as e:
-            debug_logger.log_warning(f"[VIDEO WARMUP] checkAppAvailability 失败: {e}")
+            debug_logger.log_warning(f"[VIDEO WARMUP] checkAppAvailability failed: {e}")
 
         debug_logger.log_info(
-            f"[VIDEO WARMUP] 当前视频最小初始化链路已补齐: project_id={project_id}, "
+            f"[VIDEO WARMUP] Minimum video initialization chain is now complete: project_id={project_id}, "
             f"session_id={session_id}, model_key={model_key}, aspect_ratio={aspect_ratio}, "
             f"user_paygate_tier={user_paygate_tier}, prompt_len={len(prompt or '')}"
         )
@@ -3072,7 +3072,7 @@ class _FlowClientBase(FlowFrontendMixin):
         entity_id = self._extract_flow_entity_id(result)
         if not entity_id:
             raise RuntimeError(
-                f"flow.createEntity 响应缺少 entityId: keys={list(result.keys())}"
+                f"flow.createEntity response is missing entityId: keys={list(result.keys())}"
             )
         return entity_id
 
@@ -3200,9 +3200,9 @@ class _FlowClientBase(FlowFrontendMixin):
         token_video_concurrency: Optional[int] = None,
     ) -> Dict[str, Any]:
         if not st:
-            raise RuntimeError("Omni 参考图视频需要 ST token，但当前账号未提供 ST")
+            raise RuntimeError("Omni reference-image video requires an ST token, but the current account did not provide ST")
         if not reference_media_ids:
-            raise RuntimeError("Omni 参考图视频至少需要 1 张参考图")
+            raise RuntimeError("Omni reference-image video requires at least 1 reference image")
 
         max_retries = self._resolve_generation_retry_budget(config.flow_max_retries)
         last_error = None
@@ -3251,7 +3251,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     max_retries=max_retries,
                     browser_id=browser_id,
                     project_id=project_id,
-                    log_prefix="[VIDEO OMNI-R2V] 生成",
+                    log_prefix="[VIDEO OMNI-R2V] Generate",
                 )
                 if should_retry:
                     retry_attempt += 1
@@ -3273,7 +3273,7 @@ class _FlowClientBase(FlowFrontendMixin):
                             account_id=account_id,
                         )
                     debug_logger.log_info(
-                        f"[VIDEO OMNI-R2V] 已创建角色实体并挂载参考图: project_id={project_id}, entity_id={entity_id}, refs={len(reference_media_ids)}"
+                        f"[VIDEO OMNI-R2V] Created character entity and attached reference image: project_id={project_id}, entity_id={entity_id}, refs={len(reference_media_ids)}"
                     )
 
                 if not video_context_warmed:
@@ -3297,7 +3297,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 )
                 if not agent_session_id:
                     raise RuntimeError(
-                        f"未找到 Flow Creation Agent Session: project_id={project_id}"
+                        f"Flow Creation Agent Session not found: project_id={project_id}"
                     )
 
                 session_detail = await self.get_flow_creation_agent_session_detail(
@@ -3354,7 +3354,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     )
                     if not approve_recaptcha_token:
                         raise RuntimeError(
-                            "Omni 参考图视频审批阶段获取 reCAPTCHA token 失败"
+                            "Failed to obtain reCAPTCHA token during the Omni reference-image video approval phase"
                         )
                     approve_payload = {
                         "agentSessionId": agent_session_id,
@@ -3390,7 +3390,7 @@ class _FlowClientBase(FlowFrontendMixin):
 
                 if not tool_result:
                     raise RuntimeError(
-                        "Omni 参考图视频链路未返回 generate_video_with_references toolResult"
+                        "Omni reference-image video chain did not return generate_video_with_references toolResult"
                     )
 
                 media_id = str(tool_result.get("media_id") or "").strip()
@@ -3400,7 +3400,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 )
                 if not media_id:
                     raise RuntimeError(
-                        f"Omni 参考图视频 toolResult 缺少 media_id: {tool_result}"
+                        f"Omni reference-image video toolResult is missing media_id: {tool_result}"
                     )
 
                 operation = {
@@ -3431,7 +3431,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     max_retries=max_retries,
                     browser_id=browser_id,
                     project_id=project_id,
-                    log_prefix="[VIDEO OMNI-R2V] 生成",
+                    log_prefix="[VIDEO OMNI-R2V] Generate",
                     defer_browser_error_notification=True,
                 )
                 if should_retry:
@@ -3511,7 +3511,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     max_retries=max_retries,
                     browser_id=browser_id,
                     project_id=project_id,
-                    log_prefix="[VIDEO R2V] 生成",
+                    log_prefix="[VIDEO R2V] Generate",
                 )
                 if should_retry:
                     retry_attempt += 1
@@ -3580,7 +3580,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     max_retries=max_retries,
                     browser_id=browser_id,
                     project_id=project_id,
-                    log_prefix="[VIDEO R2V] 生成",
+                    log_prefix="[VIDEO R2V] Generate",
                     defer_browser_error_notification=True,
                 )
                 if should_retry:
@@ -3659,7 +3659,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     max_retries=max_retries,
                     browser_id=browser_id,
                     project_id=project_id,
-                    log_prefix="[VIDEO I2V] 首尾帧生成",
+                    log_prefix="[VIDEO I2V] First and last frame generation",
                 )
                 if should_retry:
                     retry_attempt += 1
@@ -3729,7 +3729,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     max_retries=max_retries,
                     browser_id=browser_id,
                     project_id=project_id,
-                    log_prefix="[VIDEO I2V] 首尾帧生成",
+                    log_prefix="[VIDEO I2V] First and last frame generation",
                     defer_browser_error_notification=True,
                 )
                 if should_retry:
@@ -3806,7 +3806,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     max_retries=max_retries,
                     browser_id=browser_id,
                     project_id=project_id,
-                    log_prefix="[VIDEO I2V] 首帧生成",
+                    log_prefix="[VIDEO I2V] First frame generation",
                 )
                 if should_retry:
                     retry_attempt += 1
@@ -3876,7 +3876,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     max_retries=max_retries,
                     browser_id=browser_id,
                     project_id=project_id,
-                    log_prefix="[VIDEO I2V] 首帧生成",
+                    log_prefix="[VIDEO I2V] First frame generation",
                     defer_browser_error_notification=True,
                 )
                 if should_retry:
@@ -3954,7 +3954,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     max_retries=max_retries,
                     browser_id=browser_id,
                     project_id=project_id,
-                    log_prefix="[VIDEO EXTEND] 续写",
+                    log_prefix="[VIDEO EXTEND] Extend",
                 )
                 if should_retry:
                     retry_attempt += 1
@@ -4032,7 +4032,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     max_retries=max_retries,
                     browser_id=browser_id,
                     project_id=project_id,
-                    log_prefix="[VIDEO EXTEND] 续写",
+                    log_prefix="[VIDEO EXTEND] Extend",
                     defer_browser_error_notification=True,
                 )
                 if should_retry:
@@ -4086,14 +4086,14 @@ class _FlowClientBase(FlowFrontendMixin):
         }
         
         debug_logger.log_info(
-            f"[CONCAT] 提交拼接任务: original={original_media_id[:12]}..., extend={extend_media_id[:12]}..."
+            f"[CONCAT] Submitting concat task: original={original_media_id[:12]}..., extend={extend_media_id[:12]}..."
         )
         
         result = await self._make_request(
             method="POST", url=url, json_data=json_data, use_at=True, at_token=at
         )
         debug_logger.log_info(
-            f"[CONCAT] 拼接任务已提交: {json.dumps(result, ensure_ascii=False)[:300]}"
+            f"[CONCAT] Concat task submitted: {json.dumps(result, ensure_ascii=False)[:300]}"
         )
         return result
 
@@ -4139,14 +4139,14 @@ class _FlowClientBase(FlowFrontendMixin):
             elapsed = int(time.time() - start_time)
             all_keys = list(result.keys())
             debug_logger.log_info(
-                f"[CONCAT] 状态: {status}, outputUri={'yes' if output_uri else 'no'}, "
+                f"[CONCAT] Status: {status}, outputUri={'yes' if output_uri else 'no'}, "
                 f"encodedVideo={ev_len} chars, elapsed={elapsed}s, keys={all_keys}"
             )
             
             # Check outputUri first
             if output_uri:
                 debug_logger.log_info(
-                    f"[CONCAT] 拼接完成 (outputUri): {output_uri[:120]}"
+                    f"[CONCAT] Concat complete (outputUri): {output_uri[:120]}"
                 )
                 return result
             
@@ -4169,32 +4169,32 @@ class _FlowClientBase(FlowFrontendMixin):
                     # Build the URL: FastAPI mounts /tmp -> /app/tmp/
                     serve_url = f"/tmp/{video_filename}"
                     debug_logger.log_info(
-                        f"[CONCAT] 拼接完成 (encodedVideo): 保存 {len(video_bytes)} bytes -> {serve_url}"
+                        f"[CONCAT] Concat complete (encodedVideo): saving {len(video_bytes)} bytes -> {serve_url}"
                     )
                     
                     result["outputUri"] = serve_url
                     result["local_file"] = save_path
                     return result
                 except Exception as e:
-                    debug_logger.log_error(f"[CONCAT] 解码 encodedVideo 失败: {e}")
-                    raise Exception(f"解码拼接视频失败: {e}")
+                    debug_logger.log_error(f"[CONCAT] Failed to decode encodedVideo: {e}")
+                    raise Exception(f"Failed to decode concatenated video: {e}")
             
             # SUCCESSFUL but neither outputUri nor encodedVideo
             if "SUCCESSFUL" in status:
                 debug_logger.log_warning(
-                    f"[CONCAT] SUCCESSFUL 但无 outputUri/encodedVideo: {json.dumps(result, ensure_ascii=False)[:300]}"
+                    f"[CONCAT] SUCCESSFUL but no outputUri/encodedVideo: {json.dumps(result, ensure_ascii=False)[:300]}"
                 )
 
             if "FAILED" in status or "ERROR" in status:
                 debug_logger.log_error(
-                    f"[CONCAT] 失败: {status}, 响应: {json.dumps(result, ensure_ascii=False)[:300]}"
+                    f"[CONCAT] Failed: {status}, response: {json.dumps(result, ensure_ascii=False)[:300]}"
                 )
-                raise Exception(f"视频拼接失败: {status}")
+                raise Exception(f"Video concatenation failed: {status}")
             
             await asyncio.sleep(poll_interval)
         
-        debug_logger.log_error(f"[CONCAT] 超时 ({timeout}s)，放弃拼接")
-        raise Exception(f"视频拼接超时 ({timeout}s)")
+        debug_logger.log_error(f"[CONCAT] Timeout ({timeout}s), giving up concatenation")
+        raise Exception(f"Video concatenation timeout ({timeout}s)")
 
     # ========== Video Upsampler ==========
 
@@ -4258,7 +4258,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     max_retries=max_retries,
                     browser_id=browser_id,
                     project_id=project_id,
-                    log_prefix="[VIDEO UPSAMPLE] 放大",
+                    log_prefix="[VIDEO UPSAMPLE] Upscale",
                 )
                 if should_retry:
                     retry_attempt += 1
@@ -4326,7 +4326,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     max_retries=max_retries,
                     browser_id=browser_id,
                     project_id=project_id,
-                    log_prefix="[VIDEO UPSAMPLE] 放大",
+                    log_prefix="[VIDEO UPSAMPLE] Upscale",
                     defer_browser_error_notification=True,
                 )
                 if should_retry:
@@ -4383,7 +4383,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     if operation_id and operation_id not in operation_ids:
                         operation_ids.append(operation_id)
                 if not operation_ids:
-                    raise ValueError("视频状态查询缺少 Flow frontend operation ID")
+                    raise ValueError("Video status query is missing Flow frontend operation ID")
                 cookie_storage = await self._resolve_flow_frontend_cookie_storage(
                     google_cookies=google_cookies,
                     token_id=token_id,
@@ -4412,7 +4412,7 @@ class _FlowClientBase(FlowFrontendMixin):
 
         media_refs = self._operations_to_media_refs(operations)
         if not media_refs:
-            raise ValueError("视频状态查询缺少 media 引用，无法按当前上游结构发起查询")
+            raise ValueError("Video status query is missing the media reference; cannot issue a query with the current upstream structure")
 
         json_data = {"media": media_refs}
         max_retries = config.flow_max_retries
@@ -4465,7 +4465,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 retry_reason = self._get_retry_reason(str(e))
                 if retry_reason and retry_attempt < max_retries - 1:
                     debug_logger.log_warning(
-                        f"[VIDEO POLL] 状态查询遇到{retry_reason}，准备重试 ({retry_attempt + 2}/{max_retries})..."
+                        f"[VIDEO POLL] Status query encountered {retry_reason}, preparing retry ({retry_attempt + 2}/{max_retries})..."
                     )
                     await asyncio.sleep(1)
                     continue
@@ -4473,7 +4473,7 @@ class _FlowClientBase(FlowFrontendMixin):
 
         if last_error is not None:
             raise last_error
-        raise RuntimeError("视频状态查询失败")
+        raise RuntimeError("Video status query failed")
 
     # ========== Media deletion (uses ST) ==========
 
@@ -4562,7 +4562,7 @@ class _FlowClientBase(FlowFrontendMixin):
             )
         except Exception as e:
             raise RuntimeError(
-                f"获取媒体重定向地址失败: media={normalized_media_name}, type={media_url_type}, error={e}"
+                f"Failed to get media redirect URL: media={normalized_media_name}, type={media_url_type}, error={e}"
             ) from e
 
     # ========== Helper methods ==========
@@ -4607,12 +4607,12 @@ class _FlowClientBase(FlowFrontendMixin):
 
         if is_terminal_attempt:
             debug_logger.log_warning(
-                f"{log_prefix}遇到{retry_reason}，已达到最大重试次数({effective_max_retries})，本次请求失败并执行关闭回收。"
+                f"{log_prefix}encountered {retry_reason}, maximum retry count reached ({effective_max_retries}), this request failed and will be closed and recycled."
             )
             return False
 
         debug_logger.log_warning(
-            f"{log_prefix}遇到{retry_reason}，将在 {retry_delay} 秒后重新获取验证码重试 ({retry_attempt + 2}/{effective_max_retries})..."
+            f"{log_prefix}encountered {retry_reason}, will retry in {retry_delay} seconds after re-acquiring the captcha ({retry_attempt + 2}/{effective_max_retries})..."
         )
         await asyncio.sleep(retry_delay)
         return True
@@ -4646,7 +4646,7 @@ class _FlowClientBase(FlowFrontendMixin):
             cookie_storage = _safe_updated_flow_cookies(self, cookie_storage)
         except Exception as e:
             debug_logger.log_warning(
-                f"[reCAPTCHA {FLOW2API_TEAM_CAPTCHA_METHOD}] 读取账号 Cookie 失败: {e}"
+                f"[reCAPTCHA {FLOW2API_TEAM_CAPTCHA_METHOD}] Failed to read account Cookie: {e}"
             )
             return {}
         if not str(cookie_storage or "").strip():
@@ -4703,22 +4703,22 @@ class _FlowClientBase(FlowFrontendMixin):
         if "browser captcha queue wait timeout" in error_lower:
             return None
         if "error_no_slot_available_block" in error_lower:
-            return "打码服务资源阻塞"
+            return "Captcha service resource blocked"
         if "error_no_slot_available" in error_lower:
-            return "打码服务资源不足"
+            return "Captcha service resources insufficient"
         if "model_access_denied" in error_lower:
             # The account lacks permission for this model; retrying will not change the result
             return None
         if "403" in error_lower:
-            return "403错误"
+            return "403 error"
         if "429" in error_lower or "too many requests" in error_lower:
-            return "429限流"
+            return "429 rate limited"
         if self._is_retryable_network_error(error_str):
-            return "网络/TLS错误"
+            return "Network/TLS error"
         if "recaptcha evaluation failed" in error_lower:
-            return "reCAPTCHA 验证失败"
+            return "reCAPTCHA verification failed"
         if "recaptcha" in error_lower:
-            return "reCAPTCHA 错误"
+            return "reCAPTCHA error"
         if any(
             keyword in error_lower
             for keyword in [
@@ -4732,7 +4732,7 @@ class _FlowClientBase(FlowFrontendMixin):
             "upstream error",
             ]
         ):
-            return "500/内部错误"
+            return "500/internal error"
         return None
 
     def _get_retry_delay_seconds(self, error_str: str, retry_attempt: int) -> int:
@@ -4889,7 +4889,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 )
             except Exception as e:
                 debug_logger.log_warning(
-                    f"[reCAPTCHA RemoteBrowser] 上报 error 失败: {e}"
+                    f"[reCAPTCHA RemoteBrowser] Failed to report error: {e}"
                 )
 
     async def _notify_browser_captcha_request_finished(
@@ -4921,7 +4921,7 @@ class _FlowClientBase(FlowFrontendMixin):
                 )
             except Exception as e:
                 debug_logger.log_warning(
-                    f"[reCAPTCHA RemoteBrowser] 上报 finish 失败: {e}"
+                    f"[reCAPTCHA RemoteBrowser] Failed to report finish: {e}"
                 )
         context = self._get_captcha_request_context()
         if context.get("browser_ref") == browser_id:
@@ -4941,12 +4941,12 @@ class _FlowClientBase(FlowFrontendMixin):
         timeout = max(5, int(config.remote_browser_timeout or 60))
 
         if not base_url:
-            raise RuntimeError("remote_browser 服务地址未配置")
+            raise RuntimeError("remote_browser service URL is not configured")
         if not api_key:
-            raise RuntimeError("remote_browser API Key 未配置")
+            raise RuntimeError("remote_browser API Key is not configured")
 
         if not (base_url.startswith("http://") or base_url.startswith("https://")):
-            raise RuntimeError("remote_browser 服务地址格式错误")
+            raise RuntimeError("Invalid remote_browser service URL format")
 
         return base_url, api_key, timeout
 
@@ -5016,7 +5016,7 @@ class _FlowClientBase(FlowFrontendMixin):
         try:
             status_code, text = await asyncio.to_thread(do_request)
         except Exception as e:
-            raise RuntimeError(f"remote_browser 请求失败: {e}") from e
+            raise RuntimeError(f"remote_browser request failed: {e}") from e
 
         return status_code, FlowClient._parse_json_response_text(text), text
 
@@ -5062,7 +5062,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     **request_kwargs,
                 )
         except Exception as e:
-            raise RuntimeError(f"remote_browser 请求失败: {e}") from e
+            raise RuntimeError(f"remote_browser request failed: {e}") from e
 
         status_code = int(getattr(response, "status_code", 0) or 0)
         text = response.text or ""
@@ -5095,10 +5095,10 @@ class _FlowClientBase(FlowFrontendMixin):
                 detail = payload.get("detail") or payload.get("message") or str(payload)
             if not detail:
                 detail = (response_text or "").strip() or f"HTTP {status_code}"
-            raise RuntimeError(f"remote_browser 请求失败: {detail}")
+            raise RuntimeError(f"remote_browser request failed: {detail}")
 
         if not isinstance(payload, dict):
-            raise RuntimeError("remote_browser 返回格式错误")
+            raise RuntimeError("remote_browser returned an invalid format")
 
         return payload
 
@@ -5143,7 +5143,7 @@ class _FlowClientBase(FlowFrontendMixin):
             self._remote_browser_prefill_last_sent[cache_key] = now_value
             return True
         except Exception as e:
-            debug_logger.log_warning(f"[reCAPTCHA RemoteBrowser] prefill 失败: {e}")
+            debug_logger.log_warning(f"[reCAPTCHA RemoteBrowser] prefill failed: {e}")
             return False
 
     async def prefill_remote_browser_for_tokens(
@@ -5209,7 +5209,7 @@ class _FlowClientBase(FlowFrontendMixin):
             "owner": asyncio.current_task(),
         })
         debug_logger.log_info(
-            f"[reCAPTCHA] 开始获取 token: method={captcha_method}, project_id={project_id}, action={action}"
+            f"[reCAPTCHA] Starting token acquisition: method={captcha_method}, project_id={project_id}, action={action}"
         )
 
         if captcha_method == "extension":
@@ -5224,20 +5224,20 @@ class _FlowClientBase(FlowFrontendMixin):
                 self._set_request_fingerprint(None)
                 return token, None
             except Exception as e:
-                debug_logger.log_error(f"[reCAPTCHA Extension] 错误: {str(e)}")
+                debug_logger.log_error(f"[reCAPTCHA Extension] Error: {str(e)}")
                 self._set_request_fingerprint(None)
                 return None, None
 
         # Built-in browser captcha (nodriver)
         if captcha_method == "personal":
-            debug_logger.log_info(f"[reCAPTCHA] 使用 personal 模式")
+            debug_logger.log_info(f"[reCAPTCHA] Using personal mode")
             try:
                 from .browser_captcha_personal import BrowserCaptchaService
 
-                debug_logger.log_info(f"[reCAPTCHA] 导入 BrowserCaptchaService 成功")
+                debug_logger.log_info(f"[reCAPTCHA] Imported BrowserCaptchaService successfully")
                 service = await BrowserCaptchaService.get_instance(self.db)
                 debug_logger.log_info(
-                    f"[reCAPTCHA] 获取服务实例成功，准备调用 get_token"
+                    f"[reCAPTCHA] Got service instance, preparing to call get_token"
                 )
                 solve_bundle = None
                 get_token_bundle = getattr(service, "get_token_bundle", None)
@@ -5276,7 +5276,7 @@ class _FlowClientBase(FlowFrontendMixin):
                         if token
                         else None
                     )
-                debug_logger.log_info(f"[reCAPTCHA] 取码完成: success={bool(token)}")
+                debug_logger.log_info(f"[reCAPTCHA] Token acquisition complete: success={bool(token)}")
                 fingerprint = (
                     solve_bundle.get("fingerprint")
                     if isinstance(solve_bundle, dict)
@@ -5312,13 +5312,13 @@ class _FlowClientBase(FlowFrontendMixin):
                     ).strip()
                     if not effective_ua:
                         debug_logger.log_warning(
-                            "[reCAPTCHA Personal] 已拿到 token，但未提取到浏览器指纹 UA；"
-                            "为避免协议提交与打码环境失配，丢弃本次 token 并触发重试"
+                            "[reCAPTCHA Personal] Token obtained, but no browser fingerprint UA was extracted;"
+                            "discarding this token and triggering a retry to avoid mismatches between protocol submission and the captcha environment"
                         )
                         self._set_request_fingerprint(None)
                         return None, None
                     debug_logger.log_info(
-                        "[reCAPTCHA Personal] 使用浏览器指纹: "
+                        "[reCAPTCHA Personal] Using browser fingerprint: "
                         f"UA={effective_ua[:120]}, Accept-Language={effective_lang or '<empty>'}"
                     )
                 self._set_request_fingerprint(fingerprint if token else None)
@@ -5340,16 +5340,16 @@ class _FlowClientBase(FlowFrontendMixin):
                 # Capture explicit errors for missing Docker environment or dependencies
                 error_msg = str(e)
                 debug_logger.log_error(f"[reCAPTCHA Personal] {error_msg}")
-                print(f"[reCAPTCHA] ❌ 内置浏览器打码失败: {error_msg}")
+                print(f"[reCAPTCHA] ❌ Built-in browser captcha failed: {error_msg}")
                 self._set_request_fingerprint(None)
                 return None, None
             except ImportError as e:
-                debug_logger.log_error(f"[reCAPTCHA Personal] 导入失败: {str(e)}")
-                print(f"[reCAPTCHA] ❌ nodriver 未安装，请运行: pip install nodriver")
+                debug_logger.log_error(f"[reCAPTCHA Personal] Import failed: {str(e)}")
+                print(f"[reCAPTCHA] ❌ nodriver is not installed, please run: pip install nodriver")
                 self._set_request_fingerprint(None)
                 return None, None
             except Exception as e:
-                debug_logger.log_error(f"[reCAPTCHA Personal] 错误: {str(e)}")
+                debug_logger.log_error(f"[reCAPTCHA Personal] Error: {str(e)}")
                 self._set_request_fingerprint(None)
                 return None, None
         # Headed browser captcha (playwright)
@@ -5365,7 +5365,7 @@ class _FlowClientBase(FlowFrontendMixin):
                     browser_id
                 ):
                     debug_logger.log_warning(
-                        "[reCAPTCHA Browser] harvest 未返回会话 id，生成请求可能被拒"
+                        "[reCAPTCHA Browser] harvest did not return a session id; generation requests may be rejected"
                     )
                 self._set_request_fingerprint(fingerprint if token else None)
                 if token:
@@ -5382,18 +5382,18 @@ class _FlowClientBase(FlowFrontendMixin):
                 # Capture explicit errors for missing Docker environment or dependencies
                 error_msg = str(e)
                 debug_logger.log_error(f"[reCAPTCHA Browser] {error_msg}")
-                print(f"[reCAPTCHA] ❌ 有头浏览器打码失败: {error_msg}")
+                print(f"[reCAPTCHA] ❌ Headful browser captcha failed: {error_msg}")
                 self._set_request_fingerprint(None)
                 return None, None
             except ImportError as e:
-                debug_logger.log_error(f"[reCAPTCHA Browser] 导入失败: {str(e)}")
+                debug_logger.log_error(f"[reCAPTCHA Browser] Import failed: {str(e)}")
                 print(
-                    f"[reCAPTCHA] ❌ playwright 未安装，请运行: pip install playwright && python -m playwright install chromium"
+                    f"[reCAPTCHA] ❌ playwright is not installed, please run: pip install playwright && python -m playwright install chromium"
                 )
                 self._set_request_fingerprint(None)
                 return None, None
             except Exception as e:
-                debug_logger.log_error(f"[reCAPTCHA Browser] 错误: {str(e)}")
+                debug_logger.log_error(f"[reCAPTCHA Browser] Error: {str(e)}")
                 self._set_request_fingerprint(None)
                 return None, None
         elif captcha_method == "remote_browser":
@@ -5419,11 +5419,11 @@ class _FlowClientBase(FlowFrontendMixin):
                 self._set_request_fingerprint(fingerprint if token else None)
                 if not token or not session_id:
                     raise RuntimeError(
-                        f"remote_browser 返回缺少 token/session_id: {payload}"
+                        f"remote_browser response is missing token/session_id: {payload}"
                     )
                 return token, str(session_id)
             except Exception as e:
-                debug_logger.log_error(f"[reCAPTCHA RemoteBrowser] 错误: {str(e)}")
+                debug_logger.log_error(f"[reCAPTCHA RemoteBrowser] Error: {str(e)}")
                 self._set_request_fingerprint(None)
                 return None, None
         # API captcha service
@@ -5499,12 +5499,12 @@ class _FlowClientBase(FlowFrontendMixin):
                 merged_fp["user_agent"] = captcha_user_agent
                 self._set_request_fingerprint(merged_fp)
                 debug_logger.log_info(
-                    f"[reCAPTCHA {captcha_method}] 已将打码 UA 注入请求指纹: "
+                    f"[reCAPTCHA {captcha_method}] Injected captcha UA into request fingerprint: "
                     f"{captcha_user_agent[:80]}"
                 )
             return token, None
         else:
-            debug_logger.log_info(f"[reCAPTCHA] 未知的打码方式: {captcha_method}")
+            debug_logger.log_info(f"[reCAPTCHA] Unknown captcha method: {captcha_method}")
             self._set_request_fingerprint(None)
             return None, None
 
@@ -5749,7 +5749,7 @@ class _FlowClientBase(FlowFrontendMixin):
                         )
                         if create_attempt < max_create_attempts - 1:
                             debug_logger.log_warning(
-                                f"[reCAPTCHA {method}] createTask 资源不足 ({error_code})，将在 {delay} 秒后重试 "
+                                f"[reCAPTCHA {method}] createTask insufficient resources ({error_code}), will retry in {delay} seconds later "
                                 f"({create_attempt + 2}/{max_create_attempts})"
                             )
                             await asyncio.sleep(delay)
@@ -5801,7 +5801,7 @@ class _FlowClientBase(FlowFrontendMixin):
                                     proxy_url=resolved_proxy_url,
                                 )
                             )
-                            debug_logger.log_info(f"[reCAPTCHA {method}] Token获取成功")
+                            debug_logger.log_info(f"[reCAPTCHA {method}] Token obtained successfully")
                             # Also return userAgent; the caller injects it into the fingerprint context,
                             # ensuring Flow API submissions use the same UA as captcha solving.
                             user_agent = solution.get("userAgent")

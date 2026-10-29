@@ -585,7 +585,7 @@ class FlowRpcCookieTests(unittest.IsolatedAsyncioTestCase):
         redirect.headers["location"] = "https://accounts.google.com/signin"
         self.respond.return_value = redirect
 
-        with self.assertRaisesRegex(RuntimeError, "重定向"):
+        with self.assertRaisesRegex(RuntimeError, "redirected"):
             await self.client.st_to_at(
                 google_cookies="SID=account; OSID=domain-session; OSID=flow-session"
             )
@@ -615,7 +615,7 @@ class FlowRpcCookieTests(unittest.IsolatedAsyncioTestCase):
         redirect.headers["location"] = "http://flow.google.com/projects"
         self.respond.return_value = redirect
 
-        with self.assertRaisesRegex(RuntimeError, "重定向"):
+        with self.assertRaisesRegex(RuntimeError, "redirected"):
             await self.client.st_to_at(
                 google_cookies="SID=account; OSID=domain-session; OSID=flow-session"
             )

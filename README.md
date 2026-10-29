@@ -11,34 +11,6 @@
 
 </div>
 
-## ❤️ Sponsors
-
-<table>
-<tr>
-<td width="180" align="center" valign="middle">
-  <a href="https://useapi.net/docs/articles/google-flow-api-zh?utm_source=flow2api&utm_medium=referral&utm_campaign=flow2api-sponsor">
-    <img src="https://useapi.net/assets/images/sponsor/useapi-banner.png" alt="useapi.net" width="150">
-  </a>
-</td>
-<td valign="top">
-  Thanks to <strong>useapi.net</strong> for sponsoring this project! <strong>One subscription, every API</strong>: useapi.net runs hosted APIs on your own Google account: <strong>Google Flow</strong> (Veo 3.1, audio-native Omni 1.1 Flash, Nano Banana Pro), <strong>Google Vids</strong> (Gemini Omni 1.1 Flash with voiced avatars, <strong>no captcha</strong>, an allowance separate from Flow, so using both on one account roughly doubles your Omni capacity), <strong>Google Flow Music</strong> (full songs with Lyria 3.5) and <strong>Gemini Notebook</strong> (NotebookLM). New: <strong>Meta Muse</strong> (muse.ai): images and about 10-second videos with spoken dialogue on your own Muse account, free plan included. Nothing to self-host. The same flat $15/month also covers Dreamina, Kling, PixVerse, MiniMax, Mureka, Runway and more. <a href="https://useapi.net/docs/articles/google-flow-api-zh?utm_source=flow2api&utm_medium=referral&utm_campaign=flow2api-sponsor">Flow tutorial (Chinese)</a> · <a href="https://useapi.net/docs/articles/google-vids-api-zh?utm_source=flow2api&utm_medium=referral&utm_campaign=flow2api-sponsor">Vids tutorial (Chinese)</a> · <a href="https://useapi.net/docs/articles/muse-api-zh?utm_source=flow2api&utm_medium=referral&utm_campaign=flow2api-sponsor">Muse tutorial (Chinese)</a> · <a href="https://useapi.net/docs/api-google-flow-v1?utm_source=flow2api&utm_medium=referral&utm_campaign=flow2api-sponsor">Flow docs</a> · <a href="https://useapi.net/docs/api-google-vids-v1?utm_source=flow2api&utm_medium=referral&utm_campaign=flow2api-sponsor">Vids docs</a> · <a href="https://useapi.net/docs/api-muse-v1?utm_source=flow2api&utm_medium=referral&utm_campaign=flow2api-sponsor">Muse docs</a> · <a href="https://buy.stripe.com/8x2aEX4Bd8Vh9PMg4qeUU03?client_reference_id=flow2api">Subscribe</a>
-</td>
-</tr>
-</table>
-
-<table>
-<tr>
-<td width="180" align="center" valign="middle">
-  <a href="https://proxylane.dev/?utm_source=flow2api&utm_medium=partnership&utm_campaign=flow2api_sponsor_202610&utm_content=github_readme">
-    <img src="static/sponsors/proxylane-flow2api.png" alt="ProxyLane" width="150">
-  </a>
-</td>
-<td valign="top">
-  Thanks to <strong>ProxyLane</strong> for sponsoring this project! ProxyLane is a residential proxy service in 195 countries, with 95%+ of IPs rated low risk by Scamalytics and HTTP / SOCKS5 with username and password. Put the proxy into a Token's protocol or captcha proxy, or into the global request proxy, with a city and a session name in the username: each Token keeps one residential IP for up to 72 hours, and a replacement IP stays in the same city. The console is in Chinese and USDT payment is supported. New customers get 30% off the first purchase with code <strong>FLOW2API30</strong>. <a href="https://proxylane.dev/?utm_source=flow2api&utm_medium=partnership&utm_campaign=flow2api_sponsor_202610&utm_content=github_readme">Sign up here</a> · <a href="https://proxylane.dev/?utm_source=flow2api&utm_medium=partnership&utm_campaign=flow2api_sponsor_202610&utm_content=github_readme_en">English landing page</a>
-</td>
-</tr>
-</table>
-
 ## ✨ Core features
 
 - 🎨 **Text to image** / **Image to image**
@@ -166,15 +138,11 @@ Open **http://localhost:8000/test** for the built-in model test page. It support
 
 ## 🌐 Interface language
 
-The sign-in page, admin console, and model test page all support **Simplified Chinese and English**. Use the language selector in the top-right corner. The initial language follows your browser, and your manual selection is saved in the current browser, so it carries across pages and later visits. Switching languages does not reload the page and does not clear forms, uploaded images, or interrupt running generation tasks.
+The sign-in page, admin console, model test page, and captcha extension are **English-only**. There is no language selector.
 
-The captcha browser extension's settings page is also available in both languages. Its preference is stored in the extension's local storage and switching preserves unsaved settings.
+API messages and errors are English. The API returns `Content-Language: en` and ignores `Accept-Language`; account data, prompts, generated content, raw logs, and upstream diagnostics are passed through unchanged. Generation results and SSE streams are not rewritten.
 
-API messages and errors honor `Accept-Language: zh-CN` or `Accept-Language: en` and return `Content-Language`. Unsupported languages fall back to Simplified Chinese. Account data, prompts, generated content, raw logs, and unknown upstream diagnostics remain unchanged. Generation results and SSE streams are passed through untranslated.
-
-Translation catalogs live in `static/locales/`: `common.json` holds shared strings, `login.json` / `manage.json` / `test.json` cover the three pages, and `backend.json` covers API messages. Each catalog contains `zh-CN` and `en` entries keyed by the source message; keep interpolation placeholders such as `{0}` unchanged when adding translations.
-
-The extension catalog is `extension/locales.json`.
+The UI ships without translation catalogs; all strings are authored directly in English in the HTML, JavaScript, and Python sources.
 
 ## 📋 Supported models
 

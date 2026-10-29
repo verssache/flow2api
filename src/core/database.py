@@ -376,7 +376,7 @@ class Database:
         try:
             await db.execute(
                 "UPDATE tokens SET last_st_refresh_result = '' "
-                "WHERE last_st_refresh_result LIKE '%登录账号与当前%'"
+                "WHERE last_st_refresh_result LIKE '%\u767b\u5f55\u8d26\u53f7\u4e0e\u5f53\u524d%'"
             )
         except Exception:
             pass
@@ -1119,7 +1119,7 @@ class Database:
         query += " LIMIT 1"
         cursor = await db.execute(query, params)
         if await cursor.fetchone():
-            raise ValueError(f"账号已存在: {identities[0]}")
+            raise ValueError(f"Account already exists: {identities[0]}")
 
     # Token operations
     async def add_token(self, token: Token) -> int:

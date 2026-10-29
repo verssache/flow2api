@@ -179,24 +179,24 @@ class ProtocolLogin:
             if response_host and response_host != "flow.google.com":
                 return {
                     "success": False,
-                    "error": "Flow Cookie 已失效或不完整，页面已跳转到 Google 登录",
+                    "error": "Flow Cookie is invalid or incomplete; page redirected to Google sign-in",
                 }
             if response.status_code != 200:
                 return {
                     "success": False,
-                    "error": f"Flow Cookie 验证失败: HTTP {response.status_code}",
+                    "error": f"Flow Cookie validation failed: HTTP {response.status_code}",
                 }
             if "boq_labs-ai-sandbox-frontend_" not in (response.text or ""):
                 return {
                     "success": False,
-                    "error": "Flow Cookie 验证失败: 未加载当前前端",
+                    "error": "Flow Cookie validation failed: current frontend not loaded",
                 }
             validate_flow_cookie_storage(refreshed_cookies)
             account_email = extract_flow_account_email(response.text)
             if not account_email:
                 return {
                     "success": False,
-                    "error": "Flow 页面未返回已登录账号，请重新同步 Google Cookies",
+                    "error": "Flow page did not return a signed-in account; please re-sync Google Cookies",
                 }
             expected_email = str(email or "").strip()
             if (
@@ -205,7 +205,7 @@ class ProtocolLogin:
             ):
                 # The email is authoritative from the Flow page; callers use it to auto-correct local account info.
                 debug_logger.log_warning(
-                    f"[PROTOCOL_LOGIN] 登录账号已变更: {expected_email} -> {account_email}"
+                    f"[PROTOCOL_LOGIN] Login account changed: {expected_email} -> {account_email}"
                 )
             digest = hashlib.sha256(refreshed_cookies.encode("utf-8")).hexdigest()[:32]
             return {
@@ -215,7 +215,7 @@ class ProtocolLogin:
                 "google_cookies": refreshed_cookies,
             }
         except Exception as exc:
-            debug_logger.log_error(f"[PROTOCOL_LOGIN] Flow Cookie 验证异常: {exc}")
+            debug_logger.log_error(f"[PROTOCOL_LOGIN] Flow Cookie validation error: {exc}")
             error = f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__
             return {"success": False, "error": error}
 

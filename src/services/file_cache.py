@@ -276,14 +276,14 @@ class FileCache:
         """Normalize cache errors to avoid exposing low-level command exceptions to users."""
         if isinstance(error, FileNotFoundError):
             missing_name = Path(getattr(error, "filename", "") or "curl").name or "curl"
-            return f"本机未安装 {missing_name}"
+            return f"Not installed on this machine: {missing_name}"
 
         message = str(error or "").strip()
         if not message:
-            return "未知错误"
+            return "Unknown error"
 
         if message.startswith("Failed to cache file:"):
-            message = message.split(":", 1)[1].strip() or "未知错误"
+            message = message.split(":", 1)[1].strip() or "Unknown error"
 
         return message
 
