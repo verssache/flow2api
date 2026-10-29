@@ -25,11 +25,12 @@
                 <span class="font-bold text-xl">Flow2API</span>
             </div>
             <div class="flex flex-1 items-center justify-end gap-3">
-
-                <a href="https://github.com/TheSmallHanCat/flow2api" target="_blank" class="inline-flex items-center justify-center text-xs transition-colors hover:bg-accent hover:text-accent-foreground h-7 px-2.5" title="GitHub repository" data-i18n-title="GitHub repository">
-                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v 3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                <a href="/api-docs" class="inline-flex items-center justify-center text-xs transition-colors hover:bg-muted h-7 px-2.5 gap-1" title="API Docs" data-i18n-title="API Docs">
+                    <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
                     </svg>
+                    <span data-i18n="API Docs">API Docs</span>
                 </a>
                 <button onclick="logout()" class="inline-flex items-center justify-center text-xs transition-colors hover:bg-accent hover:text-accent-foreground h-7 px-2.5 gap-1">
                     <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -352,9 +353,9 @@
                             </label>
                             <p class="text-xs text-muted-foreground mt-2"><span data-i18n="If the extension updates a disabled token, enable it automatically.">If the extension updates a disabled token, enable it automatically.</span></p>
                         </div>
-                        <div class="rounded-md bg-blue-50 dark:bg-blue-900/20 p-3 border border-blue-200 dark:border-blue-800">
-                            <p class="text-xs text-blue-800 dark:text-blue-200">
-                                ℹ️ <strong><span data-i18n="Instructions:">Instructions:</span></strong><span data-i18n="After installing the latest Chrome extension, configure the connection endpoint and token in the extension. It will extract Google Flow login cookies and update the system automatically.">After installing the latest Chrome extension, configure the connection endpoint and token in the extension. It will extract Google Flow login cookies and update the system automatically.</span>
+                        <div class="rounded-md bg-blue-50 p-3 border border-blue-200">
+                            <p class="text-xs text-foreground">
+                                ℹ️ <strong><span data-i18n="Instructions:">Instructions:</span></strong> <span data-i18n="After installing the latest Chrome extension, configure the connection endpoint and token in the extension. It will extract Google Flow login cookies and update the system automatically.">After installing the latest Chrome extension, configure the connection endpoint and token in the extension. It will extract Google Flow login cookies and update the system automatically.</span>
                             </p>
                         </div>
                     </div>
@@ -478,9 +479,9 @@
 
                         <!-- Browser CAPTCHA solving configuration options -->
                         <div id="browserCaptchaOptions" class="hidden space-y-4">
-                            <div class="rounded-md bg-blue-50 dark:bg-blue-900/20 p-3 border border-blue-200 dark:border-blue-800">
-                                <p class="text-xs text-blue-800 dark:text-blue-200">
-                                    ℹ️ <strong><span data-i18n="Browser captcha:">Browser captcha:</span></strong><span data-i18n="Uses a Playwright-controlled browser to solve captcha challenges. No extra provider configuration is needed, but it uses more system resources.">Uses a Playwright-controlled browser to solve captcha challenges. No extra provider configuration is needed, but it uses more system resources.</span>
+                            <div class="rounded-md bg-blue-50 p-3 border border-blue-200">
+                                <p class="text-xs text-foreground">
+                                    ℹ️ <strong><span data-i18n="Browser captcha:">Browser captcha:</span></strong> <span data-i18n="Uses a Playwright-controlled browser to solve captcha challenges. No extra provider configuration is needed, but it uses more system resources.">Uses a Playwright-controlled browser to solve captcha challenges. No extra provider configuration is needed, but it uses more system resources.</span>
                                 </p>
                             </div>
 
@@ -496,7 +497,7 @@
                                 <label class="text-sm font-medium mb-2 block"><span data-i18n="Proxy URL">Proxy URL</span></label>
                                 <input id="cfgBrowserProxyUrl" type="text" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="http://host:port or socks5://host:port" data-i18n-placeholder="http://host:port or socks5://host:port">
                                 <p class="text-xs text-muted-foreground mt-1">
-                                    ✅ <strong><span data-i18n="Supported:">Supported:</span></strong><span data-i18n="HTTP/HTTPS/SOCKS5/SOCKS5H proxies, including authenticated proxies">HTTP/HTTPS/SOCKS5/SOCKS5H proxies, including authenticated proxies</span><br>
+                                    ✅ <strong><span data-i18n="Supported:">Supported:</span></strong> <span data-i18n="HTTP/HTTPS/SOCKS5/SOCKS5H proxies, including authenticated proxies">HTTP/HTTPS/SOCKS5/SOCKS5H proxies, including authenticated proxies</span><br>
                                     <span data-i18n="Example:">Example:</span><code class="bg-muted px-1 py-0.5 rounded">http://user:pass@proxy.com:8080</code> <span data-i18n="or">or</span> <code class="bg-muted px-1 py-0.5 rounded">socks5://user:pass@proxy.com:1080</code>
                                 </p>
                             </div>
@@ -510,9 +511,9 @@
 
                         <!-- Built-in browser CAPTCHA solving configuration options -->
                         <div id="personalOptions" class="hidden space-y-4">
-                            <div class="rounded-md bg-blue-50 dark:bg-blue-900/20 p-3 border border-blue-200 dark:border-blue-800">
-                                <p class="text-xs text-blue-800 dark:text-blue-200">
-                                    ℹ️ <strong><span data-i18n="Built-in browser:">Built-in browser:</span></strong><span data-i18n="Uses a nodriver-controlled browser to solve captcha challenges, with reusable tabs for better performance.">Uses a nodriver-controlled browser to solve captcha challenges, with reusable tabs for better performance.</span>
+                            <div class="rounded-md bg-blue-50 p-3 border border-blue-200">
+                                <p class="text-xs text-foreground">
+                                    ℹ️ <strong><span data-i18n="Built-in browser:">Built-in browser:</span></strong> <span data-i18n="Uses a nodriver-controlled browser to solve captcha challenges, with reusable tabs for better performance.">Uses a nodriver-controlled browser to solve captcha challenges, with reusable tabs for better performance.</span>
                                 </p>
                             </div>
 
@@ -572,7 +573,7 @@
                                 <label class="text-sm font-medium mb-2 block"><span data-i18n="Proxy URL">Proxy URL</span></label>
                                 <input id="cfgPersonalProxyUrl" type="text" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="http://host:port or socks5://host:port" data-i18n-placeholder="http://host:port or socks5://host:port">
                                 <p class="text-xs text-muted-foreground mt-1">
-                                    ✅ <strong><span data-i18n="Supported:">Supported:</span></strong><span data-i18n="HTTP/HTTPS/SOCKS5/SOCKS5H proxies, including authenticated proxies">HTTP/HTTPS/SOCKS5/SOCKS5H proxies, including authenticated proxies</span><br>
+                                    ✅ <strong><span data-i18n="Supported:">Supported:</span></strong> <span data-i18n="HTTP/HTTPS/SOCKS5/SOCKS5H proxies, including authenticated proxies">HTTP/HTTPS/SOCKS5/SOCKS5H proxies, including authenticated proxies</span><br>
                                     <span data-i18n="Example:">Example:</span><code class="bg-muted px-1 py-0.5 rounded">http://user:pass@proxy.com:8080</code> <span data-i18n="or">or</span> <code class="bg-muted px-1 py-0.5 rounded">socks5://user:pass@proxy.com:1080</code>
                                 </p>
                             </div>
@@ -580,9 +581,9 @@
 
                         <!-- Remote headed CAPTCHA solving configuration options -->
                         <div id="remoteBrowserOptions" class="hidden space-y-4">
-                            <div class="rounded-md bg-blue-50 dark:bg-blue-900/20 p-3 border border-blue-200 dark:border-blue-800">
-                                <p class="text-xs text-blue-800 dark:text-blue-200">
-                                    ℹ️ <strong><span data-i18n="Remote headed browser:">Remote headed browser:</span></strong><span data-i18n="Call a separate captcha service over HTTP to obtain a token, then send a finish/error callback when the request ends.">Call a separate captcha service over HTTP to obtain a token, then send a finish/error callback when the request ends.</span>
+                            <div class="rounded-md bg-blue-50 p-3 border border-blue-200">
+                                <p class="text-xs text-foreground">
+                                    ℹ️ <strong><span data-i18n="Remote headed browser:">Remote headed browser:</span></strong> <span data-i18n="Call a separate captcha service over HTTP to obtain a token, then send a finish/error callback when the request ends.">Call a separate captcha service over HTTP to obtain a token, then send a finish/error callback when the request ends.</span>
                                 </p>
                             </div>
                             <div>
@@ -616,9 +617,9 @@
                             </label>
                             <p class="text-xs text-muted-foreground mt-2"><span data-i18n="When enabled, detailed upstream API request and response logs are written to">When enabled, detailed upstream API request and response logs are written to</span> <code class="bg-muted px-1 py-0.5 rounded">logs.txt</code> <span data-i18n="file">file</span></p>
                         </div>
-                        <div class="rounded-md bg-yellow-50 dark:bg-yellow-900/20 p-3 border border-yellow-200 dark:border-yellow-800">
-                            <p class="text-xs text-yellow-800 dark:text-yellow-200">
-                                ⚠️ <strong><span data-i18n="Note:">Note:</span></strong><span data-i18n="Debug mode generates a very large amount of logs. Enable it only for debugging, or your disk may fill up.">Debug mode generates a very large amount of logs. Enable it only for debugging, or your disk may fill up.</span>
+                        <div class="rounded-md bg-yellow-50 p-3 border border-yellow-200">
+                            <p class="text-xs text-foreground">
+                                ⚠️ <strong><span data-i18n="Note:">Note:</span></strong> <span data-i18n="Debug mode generates a very large amount of logs. Enable it only for debugging, or your disk may fill up.">Debug mode generates a very large amount of logs. Enable it only for debugging, or your disk may fill up.</span>
                             </p>
                         </div>
                     </div>
@@ -1009,12 +1010,12 @@
                     <input type="file" id="importFile" accept=".json" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                     <p class="text-xs text-muted-foreground mt-1"><span data-i18n="Accepts account JSON exported by this system, a browser cookie export for one account (array), or a {&quot;cookies&quot;: [...]} file. Up to 100 accounts per import.">Accepts account JSON exported by this system, a browser cookie export for one account (array), or a {&quot;cookies&quot;: [...]} file. Up to 100 accounts per import.</span></p>
                 </div>
-                <div class="rounded-md bg-blue-50 dark:bg-blue-900/20 p-3 border border-blue-200 dark:border-blue-800">
-                    <p class="text-xs text-blue-800 dark:text-blue-200">
-                        <strong><span data-i18n="Format:">Format:</span></strong><span data-i18n="Each item must include google_cookies. login_account is optional; if omitted, the Flow login email is read from cookies. Existing accounts are updated and others are added. Legacy access_token and session_token formats are no longer supported.">Each item must include google_cookies. login_account is optional; if omitted, the Flow login email is read from cookies. Existing accounts are updated and others are added. Legacy access_token and session_token formats are no longer supported.</span>
+                <div class="rounded-md bg-blue-50 p-3 border border-blue-200">
+                    <p class="text-xs text-foreground">
+                        <strong><span data-i18n="Format:">Format:</span></strong> <span data-i18n="Each item must include google_cookies. login_account is optional; if omitted, the Flow login email is read from cookies. Existing accounts are updated and others are added. Legacy access_token and session_token formats are no longer supported.">Each item must include google_cookies. login_account is optional; if omitted, the Flow login email is read from cookies. Existing accounts are updated and others are added. Legacy access_token and session_token formats are no longer supported.</span>
                     </p>
                 </div>
-                <p class="text-xs text-amber-700 dark:text-amber-300"><span data-i18n="Exported files contain cookies that can sign in to Flow directly. Store and import them only on trusted devices.">Exported files contain cookies that can sign in to Flow directly. Store and import them only on trusted devices.</span></p>
+                <p class="text-xs text-foreground"><span data-i18n="Exported files contain cookies that can sign in to Flow directly. Store and import them only on trusted devices.">Exported files contain cookies that can sign in to Flow directly. Store and import them only on trusted devices.</span></p>
             </div>
             <div class="flex items-center justify-end gap-3 p-5 border-t border-border">
                 <button onclick="closeImportModal()" class="inline-flex items-center justify-center rounded-md border border-input bg-background hover:bg-accent h-9 px-5"><span data-i18n="Cancel">Cancel</span></button>

@@ -320,10 +320,15 @@ async def i18n_script():
     )
 
 
-@app.get("/static/model-tester.js", include_in_schema=False)
-async def model_tester_script():
+_PAGE_SCRIPTS = {"model-tester.js", "api-docs.js"}
+
+
+@app.get("/static/{script_name}", include_in_schema=False)
+async def page_script(script_name: str):
+    if script_name not in _PAGE_SCRIPTS:
+        return Response(status_code=404)
     return FileResponse(
-        str(static_path / "model-tester.js"),
+        str(static_path / script_name),
         media_type="application/javascript",
         headers=_STATIC_PAGE_NO_CACHE_HEADERS,
     )
@@ -359,6 +364,18 @@ async def manage_page(request: Request):
     if manage_file.exists():
         return _static_page_response(manage_file)
     return HTMLResponse(content="<h1>Management Page Not Found</h1>", status_code=404)
+
+
+@app.get("/api-docs", response_class=HTMLResponse, include_in_schema=False)
+async def api_docs_page(request: Request):
+    """API usage guide"""
+    guard_response = _ensure_admin_page_session(request)
+    if guard_response is not None:
+        return guard_response
+    docs_file = static_path / "api-docs.html"
+    if docs_file.exists():
+        return _static_page_response(docs_file)
+    return HTMLResponse(content="<h1>API Docs Not Found</h1>", status_code=404)
 
 
 @app.get("/metrics")

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="API Docs - Flow2API">API Docs - Flow2API</title>
+    <script src="/static/i18n.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .doc-anchor{scroll-margin-top:5rem}
+        pre{tab-size:2}
+    </style>
+    <script>
+        tailwind.config={theme:{extend:{colors:{border:"hsl(0 0% 89%)",input:"hsl(0 0% 89%)",ring:"hsl(0 0% 3.9%)",background:"hsl(0 0% 100%)",foreground:"hsl(0 0% 3.9%)",primary:{DEFAULT:"hsl(0 0% 9%)",foreground:"hsl(0 0% 98%)"},secondary:{DEFAULT:"hsl(0 0% 96.1%)",foreground:"hsl(0 0% 9%)"},muted:{DEFAULT:"hsl(0 0% 96.1%)",foreground:"hsl(0 0% 45.1%)"},destructive:{DEFAULT:"hsl(0 84.2% 60.2%)",foreground:"hsl(0 0% 98%)"}}}}}
+    </script>
+</head>
+<body class="h-full bg-background text-foreground antialiased">
+    <!-- Navbar -->
+    <header class="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
+        <div class="mx-auto flex h-14 max-w-7xl items-center px-6">
+            <div class="mr-4 flex items-baseline gap-3">
+                <span class="font-bold text-xl">Flow2API</span>
+                <span class="text-sm text-muted-foreground"><span data-i18n="API Docs">API Docs</span></span>
+            </div>
+            <div class="flex flex-1 items-center justify-end gap-3">
+                <a href="/manage" class="inline-flex items-center justify-center text-xs transition-colors hover:bg-muted h-7 px-2.5 gap-1">
+                    <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="12" x2="5" y2="12"/>
+                        <polyline points="12 19 5 12 12 5"/>
+                    </svg>
+                    <span data-i18n="Back to console">Back to console</span>
+                </a>
+                <a href="/docs" target="_blank" class="inline-flex items-center justify-center text-xs transition-colors hover:bg-muted h-7 px-2.5 gap-1">
+                    <span data-i18n="OpenAPI schema">OpenAPI schema</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl px-6 py-8">
+        <div class="lg:grid lg:grid-cols-[220px_1fr] lg:gap-10">
+            <!-- Table of contents -->
+            <nav class="hidden lg:block">
+                <div class="sticky top-20 space-y-1 text-sm">
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"><span data-i18n="On this page">On this page</span></p>
+                    <a href="#overview" class="block rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"><span data-i18n="Overview">Overview</span></a>
+                    <a href="#auth" class="block rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"><span data-i18n="Authentication">Authentication</span></a>
+                    <a href="#quickstart" class="block rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"><span data-i18n="Quickstart">Quickstart</span></a>
+                    <a href="#endpoints" class="block rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"><span data-i18n="Endpoints">Endpoints</span></a>
+                    <a href="#models" class="block rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"><span data-i18n="Models">Models</span></a>
+                    <a href="#images" class="block rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"><span data-i18n="Image generation">Image generation</span></a>
+                    <a href="#videos" class="block rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"><span data-i18n="Video generation">Video generation</span></a>
+                    <a href="#responses" class="block rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"><span data-i18n="Responses">Responses</span></a>
+                    <a href="#errors" class="block rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"><span data-i18n="Errors">Errors</span></a>
+                    <a href="#agents" class="block rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"><span data-i18n="Notes for agents">Notes for agents</span></a>
+                </div>
+            </nav>
+
+            <div class="min-w-0 space-y-6">
+                <!-- Overview -->
+                <section id="overview" class="doc-anchor rounded-lg border border-border bg-background p-6">
+                    <h2 class="text-xl font-semibold"><span data-i18n="Overview">Overview</span></h2>
+                    <p class="mt-2 text-sm text-muted-foreground"><span data-i18n="Flow2API exposes Google Flow (Veo and Gemini image models) through two request formats. Pick whichever your client already speaks; both reach the same generation pipeline.">Flow2API exposes Google Flow (Veo and Gemini image models) through two request formats. Pick whichever your client already speaks; both reach the same generation pipeline.</span></p>
+                    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                        <div class="rounded-md border border-border p-4">
+                            <h3 class="text-sm font-medium"><span data-i18n="OpenAI-compatible">OpenAI-compatible</span></h3>
+                            <p class="mt-1 text-xs text-muted-foreground"><span data-i18n="Chat Completions shape. Works with the OpenAI SDKs by changing base_url and api_key.">Chat Completions shape. Works with the OpenAI SDKs by changing base_url and api_key.</span></p>
+                            <code class="mt-2 block text-xs">POST /v1/chat/completions</code>
+                        </div>
+                        <div class="rounded-md border border-border p-4">
+                            <h3 class="text-sm font-medium"><span data-i18n="Native Gemini">Native Gemini</span></h3>
+                            <p class="mt-1 text-xs text-muted-foreground"><span data-i18n="generateContent shape, for clients built against the Google AI API.">generateContent shape, for clients built against the Google AI API.</span></p>
+                            <code class="mt-2 block text-xs">POST /v1beta/models/{model}:generateContent</code>
+                        </div>
+                    </div>
+                    <div class="mt-4 rounded-md border border-amber-200 bg-amber-50 p-4">
+                        <p class="text-xs text-amber-900"><strong><span data-i18n="Generation is slow.">Generation is slow.</span></strong> <span data-i18n="Images usually take tens of seconds and videos several minutes. Default server timeouts are 300s for images and 1500s for videos. Prefer stream: true so the connection stays active and you receive progress updates.">Images usually take tens of seconds and videos several minutes. Default server timeouts are 300s for images and 1500s for videos. Prefer stream: true so the connection stays active and you receive progress updates.</span></p>
+                    </div>
+                </section>
+
+                <!-- Authentication -->
+                <section id="auth" class="doc-anchor rounded-lg border border-border bg-background p-6">
+                    <h2 class="text-xl font-semibold"><span data-i18n="Authentication">Authentication</span></h2>
+                    <p class="mt-2 text-sm text-muted-foreground"><span data-i18n="Every endpoint below needs the API key from">Every endpoint below needs the API key from</span> <a href="/manage" class="underline"><span data-i18n="System Settings">System Settings</span></a><span data-i18n=". Any of these three forms is accepted.">. Any of these three forms is accepted.</span></p>
+                    <div class="mt-4 overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-border text-left text-muted-foreground">
+                                    <th class="py-2 pr-4 font-medium"><span data-i18n="Form">Form</span></th>
+                                    <th class="py-2 pr-4 font-medium"><span data-i18n="Example">Example</span></th>
+                                    <th class="py-2 font-medium"><span data-i18n="Typical use">Typical use</span></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border">
+                                <tr>
+                                    <td class="py-2 pr-4"><code class="text-xs">Authorization</code></td>
+                                    <td class="py-2 pr-4"><code class="text-xs">Authorization: Bearer &lt;api_key&gt;</code></td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="OpenAI SDKs and most HTTP clients">OpenAI SDKs and most HTTP clients</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4"><code class="text-xs">x-goog-api-key</code></td>
+                                    <td class="py-2 pr-4"><code class="text-xs">x-goog-api-key: &lt;api_key&gt;</code></td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="Google AI SDKs">Google AI SDKs</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4"><code class="text-xs">key</code></td>
+                                    <td class="py-2 pr-4"><code class="text-xs">?key=&lt;api_key&gt;</code></td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="Query string, when headers are hard to set">Query string, when headers are hard to set</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="mt-3 text-xs text-muted-foreground"><span data-i18n="A missing or wrong key returns 401 with">A missing or wrong key returns 401 with</span> <code>{"detail": "Invalid API key"}</code><span data-i18n=". The admin session cookie does not authorize these endpoints; the API key does.">. The admin session cookie does not authorize these endpoints; the API key does.</span></p>
+                </section>
+
+                <!-- Quickstart -->
+                <section id="quickstart" class="doc-anchor rounded-lg border border-border bg-background p-6">
+                    <h2 class="text-xl font-semibold"><span data-i18n="Quickstart">Quickstart</span></h2>
+                    <p class="mt-2 text-sm text-muted-foreground"><span data-i18n="Generate one landscape image. Replace the key with your own; the base URL is prefilled from this page.">Generate one landscape image. Replace the key with your own; the base URL is prefilled from this page.</span></p>
+
+                    <div class="mt-4 flex flex-wrap gap-2 border-b border-border" id="quickstartTabs">
+                        <button type="button" data-lang="curl" class="qs-tab border-b-2 border-primary px-3 py-2 text-sm font-medium">cURL</button>
+                        <button type="button" data-lang="python" class="qs-tab border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground">Python</button>
+                        <button type="button" data-lang="node" class="qs-tab border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground">Node.js</button>
+                    </div>
+
+                    <div class="mt-4">
+                        <div class="relative">
+                            <button type="button" onclick="copyCode('qsCode')" class="absolute right-2 top-2 inline-flex items-center justify-center rounded-md border border-border bg-background px-2 py-1 text-xs transition-colors hover:bg-muted"><span data-i18n="Copy">Copy</span></button>
+                            <pre id="qsCode" class="overflow-x-auto rounded-md bg-muted/50 p-4 pr-16 text-xs leading-relaxed"></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Endpoints -->
+                <section id="endpoints" class="doc-anchor rounded-lg border border-border bg-background p-6">
+                    <h2 class="text-xl font-semibold"><span data-i18n="Endpoints">Endpoints</span></h2>
+                    <div class="mt-4 overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-border text-left text-muted-foreground">
+                                    <th class="py-2 pr-4 font-medium"><span data-i18n="Method">Method</span></th>
+                                    <th class="py-2 pr-4 font-medium"><span data-i18n="Path">Path</span></th>
+                                    <th class="py-2 font-medium"><span data-i18n="Purpose">Purpose</span></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border">
+                                <tr>
+                                    <td class="py-2 pr-4"><span class="rounded bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700">GET</span></td>
+                                    <td class="py-2 pr-4"><code class="text-xs">/v1/models</code></td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="List models, OpenAI shape">List models, OpenAI shape</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4"><span class="rounded bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700">GET</span></td>
+                                    <td class="py-2 pr-4"><code class="text-xs">/v1/models/aliases</code></td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="List short aliases resolved via generationConfig">List short aliases resolved via generationConfig</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4"><span class="rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-700">POST</span></td>
+                                    <td class="py-2 pr-4"><code class="text-xs">/v1/chat/completions</code></td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="Generate images and videos, OpenAI shape">Generate images and videos, OpenAI shape</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4"><span class="rounded bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700">GET</span></td>
+                                    <td class="py-2 pr-4"><code class="text-xs">/v1beta/models</code> · <code class="text-xs">/models</code></td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="List models, Gemini shape">List models, Gemini shape</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4"><span class="rounded bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700">GET</span></td>
+                                    <td class="py-2 pr-4"><code class="text-xs">/v1beta/models/{model}</code></td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="Retrieve one model, Gemini shape">Retrieve one model, Gemini shape</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4"><span class="rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-700">POST</span></td>
+                                    <td class="py-2 pr-4"><code class="text-xs">/v1beta/models/{model}:generateContent</code></td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="Generate, Gemini shape, non-streaming">Generate, Gemini shape, non-streaming</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4"><span class="rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-700">POST</span></td>
+                                    <td class="py-2 pr-4"><code class="text-xs">/v1beta/models/{model}:streamGenerateContent</code></td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="Generate, Gemini shape, SSE with ?alt=sse">Generate, Gemini shape, SSE with ?alt=sse</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4"><span class="rounded bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700">GET</span></td>
+                                    <td class="py-2 pr-4"><code class="text-xs">/health</code></td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="Public health check, no key required">Public health check, no key required</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="mt-3 text-xs text-muted-foreground"><span data-i18n="The paths without the /v1beta prefix (/models/...) behave identically and exist for clients that strip it.">The paths without the /v1beta prefix (/models/...) behave identically and exist for clients that strip it.</span></p>
+                </section>
+
+                <!-- Models -->
+                <section id="models" class="doc-anchor rounded-lg border border-border bg-background p-6">
+                    <h2 class="text-xl font-semibold"><span data-i18n="Models">Models</span></h2>
+                    <p class="mt-2 text-sm text-muted-foreground"><span data-i18n="There are two ways to name a model. Both are valid; pick one and stay consistent.">There are two ways to name a model. Both are valid; pick one and stay consistent.</span></p>
+                    <div class="mt-4 space-y-4">
+                        <div class="rounded-md border border-border p-4">
+                            <h3 class="text-sm font-medium"><span data-i18n="1. Explicit model id">1. Explicit model id</span></h3>
+                            <p class="mt-1 text-xs text-muted-foreground"><span data-i18n="The id already encodes aspect ratio and duration, so no extra parameters are needed. This is the most predictable option.">The id already encodes aspect ratio and duration, so no extra parameters are needed. This is the most predictable option.</span></p>
+                            <code class="mt-2 block text-xs">gemini-3.1-flash-image-landscape</code>
+                            <code class="mt-1 block text-xs">veo-3.1-fast-8s-landscape</code>
+                        </div>
+                        <div class="rounded-md border border-border p-4">
+                            <h3 class="text-sm font-medium"><span data-i18n="2. Alias plus generationConfig">2. Alias plus generationConfig</span></h3>
+                            <p class="mt-1 text-xs text-muted-foreground"><span data-i18n="Send a short alias and let the server resolve the concrete model from aspectRatio and imageSize. Useful for gateways that only forward a generic model name.">Send a short alias and let the server resolve the concrete model from aspectRatio and imageSize. Useful for gateways that only forward a generic model name.</span></p>
+                            <code class="mt-2 block text-xs">gemini-3.1-flash-image + aspectRatio: "16:9" → gemini-3.1-flash-image-landscape</code>
+                        </div>
+                    </div>
+                    <p class="mt-4 text-sm text-muted-foreground"><span data-i18n="Call /v1/models for the full catalog and /v1/models/aliases for the alias list. Accepted aspectRatio values:">Call /v1/models for the full catalog and /v1/models/aliases for the alias list. Accepted aspectRatio values:</span></p>
+                    <div class="mt-2 flex flex-wrap gap-2 text-xs">
+                        <code class="rounded bg-muted px-1.5 py-0.5">16:9 → landscape</code>
+                        <code class="rounded bg-muted px-1.5 py-0.5">9:16 → portrait</code>
+                        <code class="rounded bg-muted px-1.5 py-0.5">1:1 → square</code>
+                        <code class="rounded bg-muted px-1.5 py-0.5">4:3 → four-three</code>
+                        <code class="rounded bg-muted px-1.5 py-0.5">3:4 → three-four</code>
+                    </div>
+                    <p class="mt-3 text-xs text-muted-foreground"><span data-i18n="imageSize accepts 2k and 4k. Videos only resolve to landscape or portrait; other ratios fall back to the closest of the two.">imageSize accepts 2k and 4k. Videos only resolve to landscape or portrait; other ratios fall back to the closest of the two.</span></p>
+                </section>
+
+                <!-- Image generation -->
+                <section id="images" class="doc-anchor rounded-lg border border-border bg-background p-6">
+                    <h2 class="text-xl font-semibold"><span data-i18n="Image generation">Image generation</span></h2>
+                    <p class="mt-2 text-sm text-muted-foreground"><span data-i18n="Text to image uses a plain string prompt. Image to image adds up to 5 reference images as image_url parts.">Text to image uses a plain string prompt. Image to image adds up to 5 reference images as image_url parts.</span></p>
+                    <div class="relative mt-4">
+                        <button type="button" onclick="copyCode('imgCode')" class="absolute right-2 top-2 inline-flex items-center justify-center rounded-md border border-border bg-background px-2 py-1 text-xs transition-colors hover:bg-muted"><span data-i18n="Copy">Copy</span></button>
+                        <pre id="imgCode" class="overflow-x-auto rounded-md bg-muted/50 p-4 pr-16 text-xs leading-relaxed"></pre>
+                    </div>
+                    <p class="mt-3 text-xs text-muted-foreground"><span data-i18n="Reference images accept a data: URL (data:image/png;base64,...) or a public http(s) URL. Data URLs are the safest, since the server does not need outbound access to fetch them.">Reference images accept a data: URL (data:image/png;base64,...) or a public http(s) URL. Data URLs are the safest, since the server does not need outbound access to fetch them.</span></p>
+                </section>
+
+                <!-- Video generation -->
+                <section id="videos" class="doc-anchor rounded-lg border border-border bg-background p-6">
+                    <h2 class="text-xl font-semibold"><span data-i18n="Video generation">Video generation</span></h2>
+                    <p class="mt-2 text-sm text-muted-foreground"><span data-i18n="Video families differ only in how many reference images they take. The model id you choose decides the family.">Video families differ only in how many reference images they take. The model id you choose decides the family.</span></p>
+                    <div class="mt-4 overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-border text-left text-muted-foreground">
+                                    <th class="py-2 pr-4 font-medium"><span data-i18n="Family">Family</span></th>
+                                    <th class="py-2 pr-4 font-medium"><span data-i18n="Images">Images</span></th>
+                                    <th class="py-2 font-medium"><span data-i18n="Meaning">Meaning</span></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border">
+                                <tr>
+                                    <td class="py-2 pr-4"><code class="text-xs">t2v</code></td>
+                                    <td class="py-2 pr-4 text-xs">0</td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="Text to video">Text to video</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4"><code class="text-xs">i2v</code></td>
+                                    <td class="py-2 pr-4 text-xs">1–2</td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="First frame, or first and last frame">First frame, or first and last frame</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4"><code class="text-xs">r2v</code></td>
+                                    <td class="py-2 pr-4 text-xs">1–3</td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="Reference images for characters and scenes">Reference images for characters and scenes</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4"><code class="text-xs">omni</code></td>
+                                    <td class="py-2 pr-4 text-xs">0–3</td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="Omni 1.1 Flash, audio-native video">Omni 1.1 Flash, audio-native video</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4"><code class="text-xs">extend</code></td>
+                                    <td class="py-2 pr-4 text-xs">—</td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="Continue a previously generated video">Continue a previously generated video</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4"><code class="text-xs">upsample</code></td>
+                                    <td class="py-2 pr-4 text-xs">—</td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="Generate, then upscale to 1080p or 4K">Generate, then upscale to 1080p or 4K</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="relative mt-4">
+                        <button type="button" onclick="copyCode('vidCode')" class="absolute right-2 top-2 inline-flex items-center justify-center rounded-md border border-border bg-background px-2 py-1 text-xs transition-colors hover:bg-muted"><span data-i18n="Copy">Copy</span></button>
+                        <pre id="vidCode" class="overflow-x-auto rounded-md bg-muted/50 p-4 pr-16 text-xs leading-relaxed"></pre>
+                    </div>
+                    <div class="mt-4 rounded-md border border-border bg-muted/30 p-4">
+                        <h3 class="text-sm font-medium"><span data-i18n="Extending a video">Extending a video</span></h3>
+                        <p class="mt-1 text-xs text-muted-foreground"><span data-i18n="Pick an extend model (for example veo-3.1-fast-extend-8s-landscape) and pass the previous media id as an image_url with the extend:// scheme. The id comes from the data-media-id attribute of the earlier video result.">Pick an extend model (for example veo-3.1-fast-extend-8s-landscape) and pass the previous media id as an image_url with the extend:// scheme. The id comes from the data-media-id attribute of the earlier video result.</span></p>
+                        <code class="mt-2 block text-xs">{"type": "image_url", "image_url": {"url": "extend://&lt;media_id&gt;"}}</code>
+                    </div>
+                </section>
+
+                <!-- Responses -->
+                <section id="responses" class="doc-anchor rounded-lg border border-border bg-background p-6">
+                    <h2 class="text-xl font-semibold"><span data-i18n="Responses">Responses</span></h2>
+                    <p class="mt-2 text-sm text-muted-foreground"><span data-i18n="Results arrive as Markdown or HTML inside the assistant message, not as a dedicated media field. Parse the URL out of the content.">Results arrive as Markdown or HTML inside the assistant message, not as a dedicated media field. Parse the URL out of the content.</span></p>
+                    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                        <div class="rounded-md border border-border p-4">
+                            <h3 class="text-sm font-medium"><span data-i18n="Image result">Image result</span></h3>
+                            <code class="mt-2 block break-all text-xs">![Generated Image](https://host/tmp/abc.png)</code>
+                        </div>
+                        <div class="rounded-md border border-border p-4">
+                            <h3 class="text-sm font-medium"><span data-i18n="Video result">Video result</span></h3>
+                            <code class="mt-2 block break-all text-xs">&lt;video src='https://host/tmp/abc.mp4' controls&gt;&lt;/video&gt;</code>
+                        </div>
+                    </div>
+                    <h3 class="mt-6 text-sm font-medium"><span data-i18n="Streaming (stream: true)">Streaming (stream: true)</span></h3>
+                    <p class="mt-1 text-sm text-muted-foreground"><span data-i18n="Server-sent events. Progress arrives in delta.reasoning_content and the final result in delta.content with finish_reason: stop, followed by data: [DONE].">Server-sent events. Progress arrives in delta.reasoning_content and the final result in delta.content with finish_reason: stop, followed by data: [DONE].</span></p>
+                    <div class="relative mt-3">
+                        <button type="button" onclick="copyCode('streamCode')" class="absolute right-2 top-2 inline-flex items-center justify-center rounded-md border border-border bg-background px-2 py-1 text-xs transition-colors hover:bg-muted"><span data-i18n="Copy">Copy</span></button>
+                        <pre id="streamCode" class="overflow-x-auto rounded-md bg-muted/50 p-4 pr-16 text-xs leading-relaxed"></pre>
+                    </div>
+                    <h3 class="mt-6 text-sm font-medium"><span data-i18n="Non-streaming">Non-streaming</span></h3>
+                    <p class="mt-1 text-sm text-muted-foreground"><span data-i18n="A single chat.completion object once generation finishes. Gemini endpoints return candidates[].content.parts instead, with inlineData for images and fileData for videos.">A single chat.completion object once generation finishes. Gemini endpoints return candidates[].content.parts instead, with inlineData for images and fileData for videos.</span></p>
+                    <div class="relative mt-3">
+                        <button type="button" onclick="copyCode('jsonCode')" class="absolute right-2 top-2 inline-flex items-center justify-center rounded-md border border-border bg-background px-2 py-1 text-xs transition-colors hover:bg-muted"><span data-i18n="Copy">Copy</span></button>
+                        <pre id="jsonCode" class="overflow-x-auto rounded-md bg-muted/50 p-4 pr-16 text-xs leading-relaxed"></pre>
+                    </div>
+                </section>
+
+                <!-- Errors -->
+                <section id="errors" class="doc-anchor rounded-lg border border-border bg-background p-6">
+                    <h2 class="text-xl font-semibold"><span data-i18n="Errors">Errors</span></h2>
+                    <div class="mt-4 overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-border text-left text-muted-foreground">
+                                    <th class="py-2 pr-4 font-medium"><span data-i18n="Status">Status</span></th>
+                                    <th class="py-2 pr-4 font-medium"><span data-i18n="Meaning">Meaning</span></th>
+                                    <th class="py-2 font-medium"><span data-i18n="What to do">What to do</span></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border">
+                                <tr>
+                                    <td class="py-2 pr-4"><code class="text-xs">400</code></td>
+                                    <td class="py-2 pr-4 text-xs text-muted-foreground"><span data-i18n="Empty prompt, or neither messages nor contents">Empty prompt, or neither messages nor contents</span></td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="Fix the request body">Fix the request body</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4"><code class="text-xs">401</code></td>
+                                    <td class="py-2 pr-4 text-xs text-muted-foreground"><span data-i18n="Missing or invalid API key">Missing or invalid API key</span></td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="Check the key in System Settings">Check the key in System Settings</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4"><code class="text-xs">404</code></td>
+                                    <td class="py-2 pr-4 text-xs text-muted-foreground"><span data-i18n="Unknown model id">Unknown model id</span></td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="List models and use an exact id">List models and use an exact id</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4"><code class="text-xs">500</code></td>
+                                    <td class="py-2 pr-4 text-xs text-muted-foreground"><span data-i18n="Generation failed upstream, or no usable token">Generation failed upstream, or no usable token</span></td>
+                                    <td class="py-2 text-xs text-muted-foreground"><span data-i18n="Open Request Logs for the detailed reason">Open Request Logs for the detailed reason</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="mt-3 text-sm text-muted-foreground"><span data-i18n="OpenAI-shaped errors look like this; the Gemini endpoints return error.code and error.status instead.">OpenAI-shaped errors look like this; the Gemini endpoints return error.code and error.status instead.</span></p>
+                    <pre class="mt-3 overflow-x-auto rounded-md bg-muted/50 p-4 text-xs leading-relaxed">{
+  "error": {
+    "message": "No available Token for image generation. ...",
+    "type": "server_error",
+    "code": "generation_failed",
+    "status_code": 500
+  }
+}</pre>
+                    <p class="mt-3 text-xs text-muted-foreground"><span data-i18n="During streaming, an error can also arrive as an SSE event carrying the same error object, so check each chunk for an error key.">During streaming, an error can also arrive as an SSE event carrying the same error object, so check each chunk for an error key.</span></p>
+                </section>
+
+                <!-- Notes for agents -->
+                <section id="agents" class="doc-anchor rounded-lg border border-border bg-background p-6">
+                    <h2 class="text-xl font-semibold"><span data-i18n="Notes for agents">Notes for agents</span></h2>
+                    <ul class="mt-3 space-y-2 text-sm text-muted-foreground">
+                        <li><span data-i18n="Set a long read timeout. Images take tens of seconds, videos several minutes; the server allows up to 300s and 1500s respectively.">Set a long read timeout. Images take tens of seconds, videos several minutes; the server allows up to 300s and 1500s respectively.</span></li>
+                        <li><span data-i18n="Prefer stream: true. Non-streaming requests hold one connection open with no feedback until the very end.">Prefer stream: true. Non-streaming requests hold one connection open with no feedback until the very end.</span></li>
+                        <li><span data-i18n="Extract the result URL with a regex over the content: !\\[.*?\\]\\((.*?)\\) for images and <video src='([^']+)' for videos.">Extract the result URL with a regex over the content: !\[.*?\]\((.*?)\) for images and &lt;video src='([^']+)' for videos.</span></li>
+                        <li><span data-i18n="Download the media promptly. Cached files live under /tmp/ and are deleted once the cache timeout expires (2 hours by default).">Download the media promptly. Cached files live under /tmp/ and are deleted once the cache timeout expires (2 hours by default).</span></li>
+                        <li><span data-i18n="Send one generation at a time per token unless you know the concurrency limit; parallel requests compete for the same Google accounts.">Send one generation at a time per token unless you know the concurrency limit; parallel requests compete for the same Google accounts.</span></li>
+                        <li><span data-i18n="Pick explicit model ids over aliases when you need an exact aspect ratio or duration; aliases depend on generationConfig being forwarded intact.">Pick explicit model ids over aliases when you need an exact aspect ratio or duration; aliases depend on generationConfig being forwarded intact.</span></li>
+                        <li><span data-i18n="Treat the prompt as the only instruction channel. systemInstruction is merged into the prompt for media models and may be dropped when it looks like a chat preamble.">Treat the prompt as the only instruction channel. systemInstruction is merged into the prompt for media models and may be dropped when it looks like a chat preamble.</span></li>
+                        <li><span data-i18n="Use the Model Tester tab to confirm a model and prompt interactively before wiring it into code.">Use the Model Tester tab to confirm a model and prompt interactively before wiring it into code.</span></li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+
+        <footer class="mt-12 border-t border-border pt-6 text-center text-xs text-muted-foreground">
+            <p>© 2025 <a href="https://linux.do/u/thesmallhancat/summary" target="_blank" class="no-underline hover:underline" style="color: inherit;">TheSmallHanCat</a> &amp;&amp; <a href="https://linux.do/u/tibbar/summary" target="_blank" class="no-underline hover:underline" style="color: inherit;">Tibbar</a>. All rights reserved.</p>
+        </footer>
+    </main>
+
+    <script src="/static/api-docs.js"></script>
+</body>
+</html>
