@@ -320,6 +320,15 @@ async def i18n_script():
     )
 
 
+@app.get("/static/model-tester.js", include_in_schema=False)
+async def model_tester_script():
+    return FileResponse(
+        str(static_path / "model-tester.js"),
+        media_type="application/javascript",
+        headers=_STATIC_PAGE_NO_CACHE_HEADERS,
+    )
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index():
     """Redirect to login page"""
@@ -350,18 +359,6 @@ async def manage_page(request: Request):
     if manage_file.exists():
         return _static_page_response(manage_file)
     return HTMLResponse(content="<h1>Management Page Not Found</h1>", status_code=404)
-
-
-@app.get("/test", response_class=HTMLResponse)
-async def test_page(request: Request):
-    """Model testing page"""
-    guard_response = _ensure_admin_page_session(request)
-    if guard_response is not None:
-        return guard_response
-    test_file = static_path / "test.html"
-    if test_file.exists():
-        return _static_page_response(test_file)
-    return HTMLResponse(content="<h1>Test Page Not Found</h1>", status_code=404)
 
 
 @app.get("/metrics")

@@ -140,12 +140,16 @@ def test_translation_assets_are_english_only_and_pages_stay_protected():
             transport=httpx.ASGITransport(app=app), base_url="http://localhost"
         ) as client:
             assert (await client.get("/static/i18n.js")).status_code == 200
+            script = await client.get("/static/model-tester.js")
+            assert script.status_code == 200
+            assert "application/javascript" in script.headers["content-type"]
+            assert "no-store" in script.headers["cache-control"]
             assert (await client.get("/static/locales/login.json")).status_code == 404
             for path in ("/static/manage.html", "/static/test.html"):
                 assert (await client.get(path)).status_code == 404
-            for path in ("/manage", "/test"):
-                result = await client.get(path)
-                assert result.status_code == 302
-                assert result.headers["location"] == "/login"
+            assert (await client.get("/test")).status_code == 404
+            result = await client.get("/manage")
+            assert result.status_code == 302
+            assert result.headers["location"] == "/login"
 
     asyncio.run(check())

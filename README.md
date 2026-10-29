@@ -127,9 +127,9 @@ Once the service is running, open the admin console at **http://localhost:8000**
 
 Prometheus can scrape `/metrics` directly. On Kubernetes, prefer scraping it from inside the cluster only and restrict external access to `/metrics` separately at the Ingress/Gateway layer.
 
-### Model test page
+### Model Tester
 
-Open **http://localhost:8000/test** for the built-in model test page. It supports:
+Open the **Model Tester** tab in the admin console at **http://localhost:8000/manage**. The API key is filled in from your admin settings. It supports:
 
 - Browsing all available models by category (image generation, text and image to video, multi-image video, video upscale, and more)
 - One-click testing by entering a prompt, with generation progress streamed live
@@ -138,7 +138,7 @@ Open **http://localhost:8000/test** for the built-in model test page. It support
 
 ## 🌐 Interface language
 
-The sign-in page, admin console, model test page, and captcha extension are **English-only**. There is no language selector.
+The sign-in page, admin console (including the Model Tester tab), and captcha extension are **English-only**. There is no language selector.
 
 API messages and errors are English. The API returns `Content-Language: en` and ignores `Accept-Language`; account data, prompts, generated content, raw logs, and upstream diagnostics are passed through unchanged. Generation results and SSE streams are not rewritten.
 
