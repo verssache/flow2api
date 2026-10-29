@@ -6840,14 +6840,14 @@ class BrowserCaptchaService:
 
         if lru_slot_id:
             debug_logger.log_info(
-                f"[BrowserCaptcha] Tab count reached the limit ({self._max_resident_tabs})，"
+                f"[BrowserCaptcha] Tab count reached the limit ({self._max_resident_tabs}), "
                 f"evicting least recently used slot={lru_slot_id}, project_hint={lru_project_hint}"
             )
             await self._close_resident_tab(lru_slot_id)
             return True
 
         debug_logger.log_warning(
-            f"[BrowserCaptcha] Tab count reached the limit ({self._max_resident_tabs})，"
+            f"[BrowserCaptcha] Tab count reached the limit ({self._max_resident_tabs}), "
             "but there are currently no idle tabs that can be safely evicted"
         )
         return False
@@ -13004,10 +13004,10 @@ class BrowserCaptchaService:
         duration_ms = (time.time() - start_time) * 1000
         debug_logger.log_info(
             "[BrowserCaptcha] ✅ Token generated successfully"
-            f"（slot={slot_id}, elapsed {duration_ms:.0f}ms, "
+            f" (slot={slot_id}, elapsed {duration_ms:.0f}ms, "
             f"slot_use_count={resident_info.use_count}, "
             f"browser_solve_count={browser_solve_count}"
-            "）"
+            ")"
         )
         await self._maybe_execute_pending_fresh_profile_restart(
             project_id,
@@ -13889,7 +13889,7 @@ class BrowserCaptchaService:
                         )
                         debug_logger.log_info(
                             "[BrowserCaptcha] [Legacy] ✅ Token obtained successfully"
-                            f"(elapsed {duration_ms:.0f}ms, browser_solve_count={browser_solve_count}）"
+                            f" (elapsed {duration_ms:.0f}ms, browser_solve_count={browser_solve_count})"
                         )
                         await self._maybe_execute_pending_fresh_profile_restart(
                             project_id,
@@ -14369,7 +14369,7 @@ class BrowserCaptchaService:
                                 extracted_fingerprint = None
                         self._last_fingerprint = extracted_fingerprint
                         debug_logger.log_info(
-                            f"[BrowserCaptcha] [Custom] ✅ Token obtained successfully on resident test tab (elapsed {duration_ms:.0f}ms）"
+                            f"[BrowserCaptcha] [Custom] ✅ Token obtained successfully on resident test tab (elapsed {duration_ms:.0f}ms)"
                         )
                         return token
 

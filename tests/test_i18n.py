@@ -10,20 +10,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from src.api import admin, routes
 from src.core.auth import verify_api_key_flexible
-from src.core.i18n import I18nMiddleware, negotiate_language, translate_message
-
-
-@pytest.mark.parametrize(
-    "header",
-    ["", "en-US,en;q=0.9", "zh-TW,en;q=0.5", "zh-CN;q=0.1,en-GB;q=0.8", "fr-FR"],
-)
-def test_language_negotiation_is_always_english(header):
-    assert negotiate_language(header) == "en"
-
-
-def test_translate_message_is_a_passthrough():
-    assert translate_message("Invalid API key", "en") == "Invalid API key"
-    assert translate_message("Prompt cannot be empty", "zh-CN") == "Prompt cannot be empty"
+from src.core.i18n import I18nMiddleware
 
 
 @pytest.mark.parametrize("path", ["/v1/models", "/v1beta/models", "/models"])
@@ -46,7 +33,7 @@ def test_model_list_always_returns_english_auth_error(path, language):
             assert response.status_code == 401
             assert response.json() == {"detail": "Invalid API key"}
             assert response.headers["content-language"] == "en"
-            assert "Accept-Language" in response.headers["vary"]
+            assert "accept-language" not in response.headers.get("vary", "").lower()
 
     asyncio.run(check())
 
@@ -105,7 +92,7 @@ def test_api_messages_are_not_rewritten_and_streams_pass_through():
             assert english.json()["data"] == {"message": "Token enabled", "prompt": "Saved note"}
             assert english.headers["content-language"] == "en"
             assert other.headers["content-language"] == "en"
-            assert set(english.headers["vary"].split(", ")) == {"Origin", "Accept-Language"}
+            assert english.headers["vary"] == "Origin"
             assert int(english.headers["content-length"]) == len(english.content)
             raw_log = await client.get("/api/logs/1", headers={"Accept-Language": "en"})
             assert raw_log.json()["message"] == "Token enabled"

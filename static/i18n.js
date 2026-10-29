@@ -67,8 +67,7 @@
     const ready = domReady.then(() => apply());
 
     window.I18n = {
-        t, translateMessage: t, translateError: t, setText, setRawText, setMessage, apply,
-        setLanguage: () => {}, ready,
+        t, setText, setRawText, setMessage, apply, ready,
         escapeHtml: value => String(value ?? '').replace(/[&<>"']/g, character => ({
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
         }[character])),

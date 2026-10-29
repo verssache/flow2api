@@ -572,7 +572,7 @@ async function generate() {
           const choices = parsed.choices || [];
           if (choices.length > 0) {
             const delta = choices[0].delta || {};
-            if (delta.reasoning_content) appendLog(I18n.translateMessage(delta.reasoning_content));
+            if (delta.reasoning_content) appendLog(delta.reasoning_content);
             const content = delta.content || "";
             if (content) {
               fullContent += content;
@@ -649,26 +649,6 @@ function renderResult(content) {
   apiKeyInput.addEventListener("change", loadModels);
   loadModels();
 })();
-
-
-window.addEventListener('languagechange', () => {
-  const collapsed = new Set(Array.from(document.querySelectorAll('.section-title.collapsed'), title => title.dataset.category));
-  renderSidebar();
-  document.querySelectorAll('.section-title').forEach(title => {
-    if (collapsed.has(title.dataset.category)) {
-      title.classList.add('collapsed');
-      title.nextElementSibling.classList.add('hidden');
-    }
-  });
-  if (!STATE.selectedModel) return;
-  const meta = STATE.modelConfig;
-  I18n.setMessage(document.getElementById('selectedModelInfo'), ALL_MODELS[STATE.selectedModel] || '');
-  if (meta.supportsImages) {
-    const limitText = meta.type === 'image' ? I18n.t('Optional, for image-to-image') : I18n.t('{0}-{1} images', {0: meta.minImages, 1: meta.maxImages});
-    I18n.setRawText(document.getElementById('imageLimit'), `(${limitText})`);
-  }
-  I18n.setMessage(document.getElementById('btnGenerate'), STATE.generating ? I18n.t('⏳ Generating...') : I18n.t(meta.type === 'image' ? '🎨 Generate image' : '🎬 Generate video'));
-});
         Object.assign(window, {applyFallbackModels, loadModels, renderSidebarFallback, getModelType, getModelMeta, renderSidebar, selectModel, handleFiles, renderImagePreviews, removeImage, generate, renderResult});
     });
     </script>
