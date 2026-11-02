@@ -121,7 +121,7 @@ Once the service is running, open the admin console at **http://localhost:8000**
 
 ## 📈 Monitoring endpoints
 
-- `GET /health`: public health check. Returns whether the service is up, plus counts of active tokens, tokens about to expire, expired tokens, tokens disabled by 429, and similar summary data.
+- `GET /health`: public health check. Returns whether the service is up, plus counts of active tokens, tokens about to expire, expired tokens, and similar summary data.
 - `GET /metrics`: Prometheus metrics endpoint.
 - `GET /api/tokens`: admin endpoint. Returns token state such as `at_expires`, `at_expired`, `at_expiring_within_1h`, `ban_reason`, and `consecutive_error_count`.
 

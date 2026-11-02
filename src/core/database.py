@@ -1354,6 +1354,15 @@ class Database:
                 await db.execute(query, params)
                 await db.commit()
 
+    async def record_token_use(self, token_id: int, used_at: datetime):
+        """Increment the token's use_count and stamp last_used_at."""
+        async with self._connect(write=True) as db:
+            await db.execute(
+                "UPDATE tokens SET use_count = COALESCE(use_count, 0) + 1, last_used_at = ? WHERE id = ?",
+                (used_at, token_id),
+            )
+            await db.commit()
+
     async def update_token_if_cookie_matches(
         self, token_id: int, expected_cookies: str, **kwargs
     ) -> bool:

@@ -80,6 +80,22 @@ class DailyStatsResetTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(token_row["today_video_count"], 1)
         self.assertEqual(token_row["today_error_count"], 0)
 
+    async def test_record_usage_accumulates_use_count(self):
+        from src.services.token_manager import TokenManager
+
+        manager = TokenManager.__new__(TokenManager)
+        manager.db = self.db
+
+        for is_video in (False, True, False):
+            await manager.record_usage(self.token_id, is_video=is_video)
+
+        token = await self.db.get_token(self.token_id)
+        token_row = (await self.db.get_all_tokens_with_stats())[0]
+        self.assertEqual(token.use_count, 3)
+        self.assertIsNotNone(token.last_used_at)
+        self.assertEqual(token_row["image_count"], 2)
+        self.assertEqual(token_row["video_count"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

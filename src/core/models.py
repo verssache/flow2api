@@ -55,8 +55,8 @@ class Token(BaseModel):
     last_st_refresh_at: Optional[datetime] = None
     last_st_refresh_result: str = ""
 
-    # 429 ban related
-    ban_reason: Optional[str] = None  # Ban reason: "429_rate_limit" or None
+    # Legacy ban markers (no longer set; cleared on enable/credential update)
+    ban_reason: Optional[str] = None
     banned_at: Optional[datetime] = None  # Ban time
 
 

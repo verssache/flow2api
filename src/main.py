@@ -200,19 +200,6 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             print(f"Remote browser pool prefill failed: {e}")
 
-    # Start 429 auto-unban task
-    import asyncio
-
-    async def auto_unban_task():
-        """Scheduled task: check and unban 429-disabled tokens every hour."""
-        while True:
-            try:
-                await asyncio.sleep(3600)  # run once per hour
-                await token_manager.auto_unban_429_tokens()
-            except Exception as e:
-                print(f"Auto-unban task error: {e}")
-
-    auto_unban_task_handle = asyncio.create_task(auto_unban_task())
     token_manager.start_protocol_refresher()
 
     print("Database initialized")
@@ -224,7 +211,6 @@ async def lifespan(app: FastAPI):
         print("File cache cleanup task started")
     else:
         print("File cache cleanup task disabled (timeout <= 0)")
-    print("429 auto-unban task started (runs every hour)")
     print("Protocol token refresher started (runs every minute)")
     print(f"Server running on http://{config.server_host}:{config.server_port}")
     print("=" * 60)
@@ -235,19 +221,12 @@ async def lifespan(app: FastAPI):
     print("Flow2API Shutting down...")
     # Stop file cache cleanup task
     await generation_handler.file_cache.stop_cleanup_task()
-    # Stop auto-unban task
-    auto_unban_task_handle.cancel()
-    try:
-        await auto_unban_task_handle
-    except asyncio.CancelledError:
-        pass
     await token_manager.stop_protocol_refresher()
     # Close browser if initialized
     if browser_service:
         await browser_service.close()
         print("Browser captcha service closed")
     print("File cache cleanup task stopped")
-    print("429 auto-unban task stopped")
     print("Protocol token refresher stopped")
 
 

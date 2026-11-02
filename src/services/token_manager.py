@@ -584,10 +584,7 @@ class TokenManager:
         refresh_interval_minutes: Optional[int] = None,
         auto_enable_on_update: bool = True,
     ):
-        """Update token (supports modifying project_id and project_name)
-
-        When the user edits and saves a token, if the token is not expired, automatically clear the 429 disabled state
-        """
+        """Update token (supports modifying project_id and project_name)"""
         update_fields = {}
         credential_updated = any(value is not None for value in (st, at, at_expires))
 
@@ -640,7 +637,7 @@ class TokenManager:
                 self._normalize_refresh_interval(refresh_interval_minutes)
             )
 
-        # Check whether the token is disabled due to 429; if so and not expired, clear the 429 state
+        # Restore an inactive token when its credentials are replaced
         token = await self.db.get_token(token_id)
         if auto_enable_on_update and credential_updated and token and not token.is_active:
             debug_logger.log_info(
@@ -649,25 +646,6 @@ class TokenManager:
             update_fields["is_active"] = True
             update_fields["ban_reason"] = None
             update_fields["banned_at"] = None
-
-        if token and token.ban_reason == "429_rate_limit":
-            # Check whether the token is expired
-            is_expired = False
-            if token.at_expires:
-                now = datetime.now(timezone.utc)
-                if token.at_expires.tzinfo is None:
-                    at_expires_aware = token.at_expires.replace(tzinfo=timezone.utc)
-                else:
-                    at_expires_aware = token.at_expires
-                is_expired = at_expires_aware <= now
-
-            # If not expired, clear the 429 disabled state
-            if not is_expired:
-                debug_logger.log_info(
-                    f"[UPDATE_TOKEN] Token {token_id} edited and saved, cleared 429 disabled state"
-                )
-                update_fields["ban_reason"] = None
-                update_fields["banned_at"] = None
 
         if update_fields:
             if credential_updated:
@@ -1331,7 +1309,7 @@ class TokenManager:
 
     async def record_usage(self, token_id: int, is_video: bool = False):
         """Record token usage"""
-        await self.db.update_token(token_id, use_count=1, last_used_at=datetime.now())
+        await self.db.record_token_use(token_id, datetime.now())
 
         if is_video:
             await self.db.increment_token_stats(token_id, "video")
@@ -1360,80 +1338,6 @@ class TokenManager:
         Note: today_error_count and historical statistics are NOT reset.
         """
         await self.db.reset_error_count(token_id)
-
-    async def ban_token_for_429(self, token_id: int):
-        """Immediately disable the token due to a 429 error
-
-        Args:
-            token_id: Token ID
-        """
-        debug_logger.log_warning(
-            f"[429_BAN] Disabling Token {token_id} (reason: 429 Rate Limit)"
-        )
-        await self.db.update_token(
-            token_id,
-            is_active=False,
-            ban_reason="429_rate_limit",
-            banned_at=datetime.now(timezone.utc),
-        )
-
-    async def auto_unban_429_tokens(self):
-        """Automatically unban tokens disabled due to 429
-
-        Rules:
-        - Auto-unban 12 hours after the ban time
-        - Only unban tokens that are not expired
-        - Only unban tokens disabled due to 429
-        """
-        all_tokens = await self.db.get_all_tokens()
-        now = datetime.now(timezone.utc)
-
-        for token in all_tokens:
-            # Skip tokens not disabled due to 429
-            if token.ban_reason != "429_rate_limit":
-                continue
-
-            # Skip tokens that are not disabled
-            if token.is_active:
-                continue
-
-            # Skip tokens without a ban time
-            if not token.banned_at:
-                continue
-
-            # Check whether the token has expired
-            if token.at_expires:
-                # Ensure timezone consistency
-                if token.at_expires.tzinfo is None:
-                    at_expires_aware = token.at_expires.replace(tzinfo=timezone.utc)
-                else:
-                    at_expires_aware = token.at_expires
-
-                # If expired, skip
-                if at_expires_aware <= now:
-                    debug_logger.log_info(
-                        f"[AUTO_UNBAN] Token {token.id} expired, skipping unban"
-                    )
-                    continue
-
-            # Ensure banned_at timezone consistency
-            if token.banned_at.tzinfo is None:
-                banned_at_aware = token.banned_at.replace(tzinfo=timezone.utc)
-            else:
-                banned_at_aware = token.banned_at
-
-            # Check whether 12 hours have passed
-            time_since_ban = now - banned_at_aware
-            if time_since_ban.total_seconds() >= 12 * 3600:  # 12 hours
-                debug_logger.log_info(
-                    f"[AUTO_UNBAN] Unbanning Token {token.id} (banned at: {banned_at_aware}, "
-                    f"elapsed {time_since_ban.total_seconds() / 3600:.1f} hours)"
-                )
-                await self.db.update_token(
-                    token.id, is_active=True, ban_reason=None, banned_at=None
-                )
-                # Reset error count
-                await self.db.reset_error_count(token.id)
 
     # ========== Balance refresh ==========
 

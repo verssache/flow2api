@@ -191,11 +191,6 @@ TOKENS_EXPIRING_SOON = Gauge(
     "Number of tokens whose access token will expire within the next hour.",
     registry=MAIN_REGISTRY,
 )
-TOKENS_BANNED_429 = Gauge(
-    "flow2api_tokens_banned_429",
-    "Number of tokens currently disabled because of 429 rate limit bans.",
-    registry=MAIN_REGISTRY,
-)
 TOKENS_CREDITS_TOTAL = Gauge(
     "flow2api_token_credits_total",
     "Sum of credits across all tokens.",
@@ -415,7 +410,6 @@ async def update_main_runtime_metrics(
     missing_at_tokens = 0
     expired_tokens = 0
     expiring_soon_tokens = 0
-    banned_429_tokens = 0
     total_credits = 0
     active_total_credits = 0
     total_errors = 0
@@ -457,8 +451,6 @@ async def update_main_runtime_metrics(
             expired_tokens += 1
         if expiring_soon:
             expiring_soon_tokens += 1
-        if (not is_active) and ban_reason == "429_rate_limit":
-            banned_429_tokens += 1
 
         total_credits += credits
         total_errors += error_count
@@ -503,7 +495,6 @@ async def update_main_runtime_metrics(
     TOKENS_MISSING_AT.set(float(missing_at_tokens))
     TOKENS_EXPIRED.set(float(expired_tokens))
     TOKENS_EXPIRING_SOON.set(float(expiring_soon_tokens))
-    TOKENS_BANNED_429.set(float(banned_429_tokens))
     TOKENS_CREDITS_TOTAL.set(float(total_credits))
     ACTIVE_TOKENS_CREDITS_TOTAL.set(float(active_total_credits))
     TOKENS_ERROR_TOTAL.set(float(total_errors))
@@ -551,7 +542,6 @@ async def build_public_health_snapshot(db: Any) -> dict[str, Any]:
     missing_at_tokens = 0
     expired_tokens = 0
     expiring_soon_tokens = 0
-    banned_429_tokens = 0
 
     for row in rows:
         if bool(row.get("is_active")):
@@ -566,11 +556,6 @@ async def build_public_health_snapshot(db: Any) -> dict[str, Any]:
             elif (at_expires - now).total_seconds() < 3600:
                 expiring_soon_tokens += 1
 
-        if (not bool(row.get("is_active"))) and str(
-            row.get("ban_reason") or ""
-        ).strip() == "429_rate_limit":
-            banned_429_tokens += 1
-
     return {
         "backend_running": True,
         "has_active_tokens": active_tokens > 0,
@@ -579,7 +564,6 @@ async def build_public_health_snapshot(db: Any) -> dict[str, Any]:
         "tokens_missing_at": missing_at_tokens,
         "tokens_expired": expired_tokens,
         "tokens_expiring_within_1h": expiring_soon_tokens,
-        "banned_429_tokens": banned_429_tokens,
         "captcha_method": config.captcha_method,
         "remote_browser_configured": (
             config.captcha_method == "remote_browser"
